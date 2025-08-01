@@ -2,7 +2,7 @@
 
 A simple Flask REST API for managing tasks.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Install Flask
@@ -12,12 +12,14 @@ pip install -r requirements.txt
 python app.py
 ```
 
-## 📋 API Endpoints
+API will be available at: http://localhost:5000
+
+## API Endpoints
 
 - `GET /tasks` - Get all tasks
 - `POST /tasks` - Create new task
 
-## 📊 Usage Examples
+## Usage Examples
 
 ### Get All Tasks
 ```bash
@@ -45,7 +47,7 @@ curl -X POST http://localhost:5000/tasks \
 }
 ```
 
-## 🐳 Docker
+## Docker
 
 ### Option 1: Docker Compose (Recommended)
 ```bash
@@ -65,7 +67,7 @@ docker build -t task-manager .
 docker run -p 5000:5000 task-manager
 ```
 
-## 📁 Project Files
+## Project Files
 
 - `app.py` - Main Flask application (single file!)
 - `requirements.txt` - Dependencies

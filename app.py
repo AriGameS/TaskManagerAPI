@@ -40,9 +40,9 @@ def create_task():
     }), 201
 
 if __name__ == '__main__':
-    print("🚀 Starting Task Manager API...")
-    print("📋 Available endpoints:")
+    print("Starting Task Manager API...")
+    print("Available endpoints:")
     print("   GET  /tasks  - Get all tasks")
     print("   POST /tasks  - Create new task")
-    print("🌐 Server running on http://localhost:5000")
+    print("Server running on http://localhost:5000")
     app.run(host='0.0.0.0', port=5000, debug=True)
