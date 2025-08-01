@@ -60,4 +60,4 @@ docker run -p 5000:5000 task-manager
 - `app.py` - Main Flask application (single file!)
 - `requirements.txt` - Dependencies
 - `Dockerfile` - Container setup
-- `README.md` - This documentation
+- `README.md` - This documentation# TaskManagerAPI
