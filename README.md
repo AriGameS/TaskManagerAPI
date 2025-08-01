@@ -47,6 +47,16 @@ curl -X POST http://localhost:5000/tasks \
 
 ## 🐳 Docker
 
+### Option 1: Docker Compose (Recommended)
+```bash
+# Start the service
+docker-compose up -d
+
+# Stop the service
+docker-compose down
+```
+
+### Option 2: Manual Docker
 ```bash
 # Build image
 docker build -t task-manager .
@@ -60,4 +70,5 @@ docker run -p 5000:5000 task-manager
 - `app.py` - Main Flask application (single file!)
 - `requirements.txt` - Dependencies
 - `Dockerfile` - Container setup
-- `README.md` - This documentation# TaskManagerAPI
+- `docker-compose.yml` - Easy container orchestration
+- `README.md` - This documentation
