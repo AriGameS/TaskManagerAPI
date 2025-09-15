@@ -183,23 +183,55 @@ The API accepts due dates in two formats:
 
 ## Docker
 
-### Option 1: Docker Compose (Recommended)
-```bash
-# Start the service
-docker-compose up -d
+### Enhanced Multi-Stage Docker Configuration
 
-# Stop the service
-docker-compose down
+The project includes production-ready Docker configuration with:
+- **Multi-stage builds** for optimized images
+- **Health checks** for container monitoring
+- **Security hardening** with non-root user
+- **Production optimizations** with Gunicorn
+- **Multiple environments** (dev, prod, monitoring)
+
+### Quick Start
+
+#### Development
+```bash
+# Start development environment
+docker-compose -f docker-compose.dev.yml up
+
+# With database and cache
+docker-compose -f docker-compose.dev.yml --profile database --profile cache up
 ```
 
-### Option 2: Manual Docker
+#### Production
 ```bash
-# Build image
-docker build -t task-manager .
+# Start production environment
+docker-compose -f docker-compose.prod.yml up -d
+
+# With monitoring and load balancer
+docker-compose -f docker-compose.prod.yml --profile monitoring --profile loadbalancer up -d
+```
+
+#### Manual Docker
+```bash
+# Build production image
+docker build -t task-manager-api:latest .
 
 # Run container
-docker run -p 5125:5125 task-manager
+docker run -p 5125:5125 task-manager-api:latest
 ```
+
+### Docker Features
+
+- **Multi-stage builds** for smaller, more secure images
+- **Health checks** with `/health` endpoint monitoring
+- **Resource limits** and optimization
+- **Security hardening** with non-root user execution
+- **Production-ready** with Gunicorn WSGI server
+- **Monitoring integration** with Prometheus and Grafana
+- **Load balancing** with Traefik reverse proxy
+
+For detailed Docker configuration, see [Docker Guide](DOCKER_GUIDE.md).
 
 ## Error Handling
 
