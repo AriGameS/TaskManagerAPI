@@ -1,9 +1,11 @@
+/* ---------- Base ---------- */
 body {
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #121212;
     color: #e0e0e0;
 }
+
 nav {
     background: #1e1e1e;
     padding: 1rem;
@@ -14,49 +16,67 @@ nav a {
     margin: 0 1rem;
     text-decoration: none;
 }
-nav a:hover {
-    text-decoration: underline;
-}
+nav a:hover { text-decoration: underline; }
+
 main {
     max-width: 1200px;
     margin: 2rem auto;
     padding: 0 2rem;
 }
-#task-tables {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
-}
-.task-section {
-    flex: 1;
-    margin-top: 1rem;
-    background: #1e1e1e;
-    padding: 1rem;
-    border-radius: 8px;
-}
+
+/* ---------- Header ---------- */
 .task-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-top: 1rem;
 }
+
 .add-btn {
     padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: none;
+    background: #3f51b5;
+    color: #fff;
+    cursor: pointer;
 }
+.add-btn:hover { filter: brightness(1.05); }
+.add-btn:active { transform: translateY(1px); }
+
+/* ---------- Section grid: FOUR columns side-by-side ---------- */
+#task-tables {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: nowrap; 
+}
+.task-section {
+    flex: 1;
+    min-width: 200px;
+    background: #1e1e1e;
+    padding: 1rem;
+    border-radius: 8px;
+}
+.task-section h2 {
+    text-align: center;
+    margin: 0.25rem 0 0.5rem;
+    font-weight: 700;
+}
+
+/* ---------- Forms (modal) ---------- */
 form {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 1rem;
 }
-/* Modal form layout */
-.modal-content form {
-    flex-direction: column;
-}
-input, select, button {
+.modal-content form { flex-direction: column; }
+
+input, select, textarea, button {
     padding: 0.5rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     background: #2c2c2c;
     color: #e0e0e0;
 }
@@ -65,70 +85,112 @@ button {
     background: #3f51b5;
     color: #fff;
 }
-.actions {
-    float: right;
+button:hover { filter: brightness(1.05); }
+.modal-content input#title { font-size: 1.05rem; }
+.modal-content textarea#description {
+    min-height: 80px;
+    max-height: 40vh;
+    resize: vertical;
+    overflow: auto;
 }
-.action-btn {
-    margin-left: 0.5rem;
-    cursor: pointer;
-    background: #2c2c2c;
-    border: none;
-    color: #e0e0e0;
-    border-radius: 4px;
-    padding: 0.25rem 0.5rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-.action-btn .fa-check {
-    color: #43a047;
-}
-.action-btn .fa-trash {
-    color: #e53935;
-}
+
+/* ---------- Tables ---------- */
 .task-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed; /* keeps rows from blowing out layout */
 }
 .task-table th, .task-table td {
     padding: 0.5rem;
     border-bottom: 1px solid #333;
     text-align: left;
+    vertical-align: top;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
+
+.task-row td:first-child { cursor: pointer; }
 .completed td:first-child {
     text-decoration: line-through;
     color: #777;
 }
-.task-row td:first-child {
-    cursor: pointer;
+.overdue td:first-child { color: #e53935; }
+
+/* ---------- Title & action buttons (TEXT-ONLY) ---------- */
+.task-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
 }
+.actions { float: none; } /* kill old float */
+.actions.below-title {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.action-btn {
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    border: none;
+    background: #2c2c2c;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+.action-btn:hover { background: #3a3a3a; }
+.action-btn:active { transform: scale(0.97); }
+.action-btn.complete { color: #43a047; }
+.action-btn.delete { color: #e53935; }
+
+/* ---------- Description row (scrolls inside cell) ---------- */
 .desc-row td {
     background: #2c2c2c;
+    padding: 0.5rem;
 }
-.hidden {
-    display: none;
+.desc-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
 }
-/* Modal styling */
+.time-left {
+    font-size: 0.95rem;
+    opacity: 0.95;
+}
+.time-left.overdue {
+    color: #e53935;
+    font-weight: 600;
+}
+.due-date small { opacity: 0.75; }
+
+.desc-content {
+    max-height: 12rem;       /* scroll instead of spilling over other tables */
+    overflow: auto;
+    padding: 0.5rem;
+    border-radius: 6px;
+    line-height: 1.4;
+    background: #262626;
+}
+
+/* ---------- Modal ---------- */
 .modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background: rgba(0, 0, 0, 0.7);
     display: flex;
     align-items: center;
     justify-content: center;
 }
-/* Ensure hidden modals stay hidden */
-.modal.hidden {
-    display: none;
-}
+.modal.hidden { display: none; }
 .modal-content {
     background: #1e1e1e;
     padding: 1.5rem;
     border-radius: 8px;
-    min-width: 300px;
+    min-width: 420px;
+    max-width: 90vw;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 .close {
     background: none;
@@ -138,12 +200,14 @@ button {
     align-self: flex-end;
     cursor: pointer;
 }
+
+/* ---------- Utility ---------- */
+.hidden { display: none; }
 .error {
     color: #ff6b6b;
     margin-bottom: 1rem;
     display: none;
 }
-
 .stats {
     position: fixed;
     bottom: 1rem;
@@ -152,4 +216,23 @@ button {
     padding: 0.5rem 1rem;
     border-radius: 8px;
     font-size: 0.9rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+
+.due-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    margin-top: 0.35rem;
+}
+
+.due-date small {
+    opacity: 0.8;
+}
+
+.time-left.overdue,
+.due-info .overdue {
+    color: #e53935;
+    font-weight: 600;
 }

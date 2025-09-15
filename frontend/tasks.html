@@ -17,13 +17,17 @@
             <h1>Tasks</h1>
             <button id="open-modal" class="add-btn">New Task</button>
         </div>
+
         <div id="error" class="error"></div>
-        <div id="task-modal" class="modal hidden">
+
+        <!-- Modal -->
+        <div id="task-modal" class="modal hidden" aria-hidden="true">
             <div class="modal-content">
-                <button id="close-modal" class="close">&times;</button>
+                <button id="close-modal" class="close" aria-label="Close">&times;</button>
                 <form id="task-form">
                     <input type="text" id="title" placeholder="Title" required />
-                    <input type="text" id="description" placeholder="Description" />
+                    <textarea id="description" placeholder="Description"></textarea>
+                    <input type="date" id="due_date" />
                     <select id="priority">
                         <option value="low">Low</option>
                         <option value="medium" selected>Medium</option>
@@ -33,6 +37,7 @@
                 </form>
             </div>
         </div>
+
         <div id="task-tables">
             <section class="task-section">
                 <h2>High Priority</h2>
@@ -60,6 +65,7 @@
             </section>
         </div>
     </main>
+
     <div id="stats" class="stats"></div>
     <script src="tasks.js"></script>
 </body>
