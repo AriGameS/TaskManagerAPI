@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task List</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/tasks.html">Tasks</a>
+    </nav>
+    <main>
+        <h1>Tasks</h1>
+        <div id="error" class="error"></div>
+        <form id="task-form">
+            <input type="text" id="title" placeholder="Title" required />
+            <input type="text" id="description" placeholder="Description" />
+            <select id="priority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+            </select>
+            <button type="submit">Add Task</button>
+        </form>
+        <section>
+            <h2>Task List</h2>
+            <ul id="tasks"></ul>
+        </section>
+        <section>
+            <h2>Statistics</h2>
+            <div id="stats"></div>
+        </section>
+    </main>
+    <script src="tasks.js"></script>
+</body>
+</html>
