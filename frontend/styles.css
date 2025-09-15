@@ -68,14 +68,22 @@ button {
 .actions {
     float: right;
 }
-.actions i {
+.action-btn {
     margin-left: 0.5rem;
     cursor: pointer;
+    background: #2c2c2c;
+    border: none;
+    color: #e0e0e0;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
 }
-.actions .fa-check {
+.action-btn .fa-check {
     color: #43a047;
 }
-.actions .fa-trash {
+.action-btn .fa-trash {
     color: #e53935;
 }
 .task-table {

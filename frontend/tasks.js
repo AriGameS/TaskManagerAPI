@@ -39,14 +39,14 @@ async function loadTasks() {
         };
         Object.values(groups).forEach(t => t.innerHTML = '');
         data.tasks.forEach(task => {
-            let icons = `<i class="fa-solid fa-trash" data-action="delete"></i>`;
+            let buttons = `<button class="action-btn" data-action="delete"><i class="fa-solid fa-trash"></i> Delete</button>`;
             if (!task.completed) {
-                icons = `<i class="fa-solid fa-check" data-action="complete"></i>` + icons;
+                buttons = `<button class="action-btn" data-action="complete"><i class="fa-solid fa-check"></i> Complete</button>` + buttons;
             }
             const row = document.createElement('tr');
             row.dataset.id = task.id;
             row.className = 'task-row' + (task.completed ? ' completed' : '');
-            row.innerHTML = `<td>${task.title}<span class="actions">${icons}</span></td>`;
+            row.innerHTML = `<td>${task.title}<span class="actions">${buttons}</span></td>`;
             const descRow = document.createElement('tr');
             descRow.className = 'desc-row hidden';
             descRow.innerHTML = `<td>${task.description || ''}</td>`;
@@ -89,10 +89,10 @@ document.getElementById('task-form').addEventListener('submit', async (e) => {
 });
 
 document.getElementById('task-tables').addEventListener('click', async (e) => {
-    const icon = e.target.closest('i[data-action]');
-    if (icon) {
-        const action = icon.dataset.action;
-        const id = icon.closest('tr').dataset.id;
+    const actionEl = e.target.closest('[data-action]');
+    if (actionEl) {
+        const action = actionEl.dataset.action;
+        const id = actionEl.closest('tr').dataset.id;
         try {
             if (action === 'delete') {
                 await fetchJSON(`/tasks/${id}`, { method: 'DELETE' });
