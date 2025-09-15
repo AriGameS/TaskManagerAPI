@@ -1,72 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Task List</title>
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-1hKFt2C0ZFwEJgqS0bkkCm1cW0XkyR3O6jwxKF1u9IiMaTZGi99Z0eKCbFf8gDuwZQ+Q0jrOqRCk0lr7XmP4PQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tasks</title>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-    <nav>
-        <a href="/">Home</a>
-        <a href="/tasks.html">Tasks</a>
-    </nav>
-    <main>
-        <div class="task-header">
-            <h1>Tasks</h1>
-            <button id="open-modal" class="add-btn">New Task</button>
-        </div>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/tasks.html">Tasks</a>
+  </nav>
 
-        <div id="error" class="error"></div>
+  <main class="tasks-app">
+    <div class="task-header container">
+      <h1>Tasks</h1>
+      <button id="open-modal" class="add-btn">New Task</button>
+    </div>
 
-        <!-- Modal -->
-        <div id="task-modal" class="modal hidden" aria-hidden="true">
-            <div class="modal-content">
-                <button id="close-modal" class="close" aria-label="Close">&times;</button>
-                <form id="task-form">
-                    <input type="text" id="title" placeholder="Title" required />
-                    <textarea id="description" placeholder="Description"></textarea>
-                    <input type="date" id="due_date" />
-                    <select id="priority">
-                        <option value="low">Low</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="high">High</option>
-                    </select>
-                    <button type="submit">Save</button>
-                </form>
+    <div id="error" class="error container"></div>
+
+    <!-- Modal -->
+    <div id="task-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content">
+        <button id="close-modal" class="close" aria-label="Close">&times;</button>
+        <form id="task-form">
+          <input type="text" id="title" placeholder="Title" required />
+          <textarea id="description" placeholder="Description"></textarea>
+          <input type="date" id="due_date" />
+          <select id="priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+          <button type="submit">Save</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Layout: tasks grid -->
+    <section class="tasks-layout container">
+      <div id="task-tables">
+
+        <!-- Row 1: all 5 sections -->
+        <section class="task-section">
+          <h2>Room Info</h2>
+          <div class="room-card">
+            <div class="room-code-line">
+              <h3 id="room-code">Room: —</h3>
+              <button id="copy-code" class="copy-btn" title="Copy room code">Copy</button>
             </div>
-        </div>
+            <div class="room-members-header">Members</div>
+            <ul id="member-list" class="member-list"></ul>
+          </div>
+        </section>
 
-        <div id="task-tables">
-            <section class="task-section">
-                <h2>High Priority</h2>
-                <table class="task-table">
-                    <tbody id="high-body"></tbody>
-                </table>
-            </section>
-            <section class="task-section">
-                <h2>Medium Priority</h2>
-                <table class="task-table">
-                    <tbody id="medium-body"></tbody>
-                </table>
-            </section>
-            <section class="task-section">
-                <h2>Low Priority</h2>
-                <table class="task-table">
-                    <tbody id="low-body"></tbody>
-                </table>
-            </section>
-            <section class="task-section">
-                <h2>Completed Tasks</h2>
-                <table class="task-table">
-                    <tbody id="completed-body"></tbody>
-                </table>
-            </section>
-        </div>
-    </main>
+        <section class="task-section">
+          <h2>High Priority</h2>
+          <table class="task-table">
+            <tbody id="high-body"></tbody>
+          </table>
+        </section>
 
-    <div id="stats" class="stats"></div>
-    <script src="tasks.js"></script>
+        <section class="task-section">
+          <h2>Medium Priority</h2>
+          <table class="task-table">
+            <tbody id="medium-body"></tbody>
+          </table>
+        </section>
+
+        <section class="task-section">
+          <h2>Low Priority</h2>
+          <table class="task-table">
+            <tbody id="low-body"></tbody>
+          </table>
+        </section>
+
+        <section class="task-section">
+          <h2>Completed Tasks</h2>
+          <table class="task-table">
+            <tbody id="completed-body"></tbody>
+          </table>
+        </section>
+
+      </div>
+    </section>
+
+    <div id="stats" class="stats">—</div>
+  </main>
+
+  <script src="tasks.js"></script>
 </body>
 </html>

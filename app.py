@@ -1,10 +1,49 @@
 from flask import Flask, request, jsonify
 from datetime import datetime
+import random
+import string
 
 app = Flask(__name__, static_folder='frontend', static_url_path='')
 
-# Simple in-memory storage for tasks
-tasks = []
+# ---------------- In-memory stores ----------------
+# rooms: { ROOM_CODE: {
+#   "code": str, "owner": str, "members": [str], "created_at": str,
+#   "tasks": [ {id, title, description, priority, due_date, completed, completed_at, created_at} ]
+# }}
+rooms = {}
+
+# ---------------- Helpers ----------------
+def now_str():
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+def generate_room_code(length: int = 6) -> str:
+    # Uppercase letters + digits, unique across rooms
+    alphabet = string.ascii_uppercase + string.digits
+    while True:
+        code = ''.join(random.choices(alphabet, k=length))
+        if code not in rooms:
+            return code
+
+def parse_due_date_str(s: str | None):
+    """Accept 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DD'. Return normalized 'YYYY-MM-DD HH:MM:SS' or None."""
+    if not s:
+        return None
+    try:
+        return datetime.strptime(s, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        try:
+            # normalize date-only to midnight
+            return datetime.strptime(s, '%Y-%m-%d').strftime('%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            return None
+
+def require_room(room_code: str | None):
+    if not room_code:
+        return None, (jsonify({"error": "room is required. Provide ?room=ROOM_CODE or body.room_code"}), 400)
+    room = rooms.get(room_code)
+    if not room:
+        return None, (jsonify({"error": f"room '{room_code}' not found"}), 404)
+    return room, None
 
 @app.route('/', methods=['GET'])
 def index():
@@ -25,12 +64,71 @@ def health():
         "uptime": "running"
     })
 
+# ---------------- Rooms ----------------
+@app.route('/rooms', methods=['POST'])
+def create_room():
+    """
+    Create a new room.
+    Body: { "username": "Alice" }
+    Returns: { room_code, room }
+    """
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    if not username:
+        return jsonify({"error": "username is required"}), 400
+
+    code = generate_room_code()
+    room = {
+        "code": code,
+        "owner": username,
+        "members": [username],
+        "created_at": now_str(),
+        "tasks": []
+    }
+    rooms[code] = room
+    return jsonify({
+        "room_code": code,
+        "room": room
+    }), 201
+
+@app.route('/rooms/<room_code>', methods=['GET'])
+def get_room(room_code):
+    """Get room info."""
+    room, err = require_room(room_code)
+    if err:
+        return err
+    return jsonify(room)
+
+@app.route('/rooms/<room_code>/join', methods=['POST'])
+def join_room(room_code):
+    """
+    Join a room.
+    Body: { "username": "Bob" }
+    """
+    room, err = require_room(room_code)
+    if err:
+        return err
+
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    if not username:
+        return jsonify({"error": "username is required"}), 400
+
+    if username not in room['members']:
+        room['members'].append(username)
+    return jsonify({"message": "Joined room", "room": room})
+
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
     status_filter = request.args.get('status')
     priority_filter = request.args.get('priority')
     
-    filtered_tasks = tasks
+    room_code = request.args.get('room')
+    room, err = require_room(room_code)
+    if err:
+        return err
+    
+    filtered_tasks = room['tasks'].copy()
     
     if status_filter:
         if status_filter.lower() == 'completed':
@@ -44,7 +142,7 @@ def get_tasks():
     return jsonify({
         "tasks": filtered_tasks,
         "total": len(filtered_tasks),
-        "total_all": len(tasks)
+        "total_all": len(room['tasks'])
     })
 
 @app.route('/tasks', methods=['POST'])
@@ -54,29 +152,28 @@ def create_task():
     if not data or 'title' not in data:
         return jsonify({"error": "Missing task title"}), 400
     
+    room_code = data.get('room_code') or request.args.get('room')
+    room, err = require_room(room_code)
+    if err:
+        return err
+    
     # Parse due_date if provided
-    due_date = None
-    if 'due_date' in data:
-        try:
-            due_date = datetime.strptime(data['due_date'], '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
-        except ValueError:
-            try:
-                due_date = datetime.strptime(data['due_date'], '%Y-%m-%d').strftime('%Y-%m-%d %H:%M:%S')
-            except ValueError:
-                return jsonify({"error": "Invalid due_date format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS"}), 400
+    due_date = parse_due_date_str(data.get('due_date'))
+    if data.get('due_date') and not due_date:
+        return jsonify({"error": "Invalid due_date format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS"}), 400
     
     task = {
-        "id": len(tasks) + 1,
+        "id": len(room['tasks']) + 1,
         "title": data['title'],
         "description": data.get('description', ''),
         "priority": data.get('priority', 'medium'),
         "due_date": due_date,
         "completed": False,
         "completed_at": None,
-        "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        "created_at": now_str()
     }
     
-    tasks.append(task)
+    room['tasks'].append(task)
     
     return jsonify({
         "message": "Task created successfully",
@@ -85,7 +182,12 @@ def create_task():
 
 @app.route('/tasks/<int:task_id>', methods=['PUT'])
 def update_task(task_id):
-    task = next((t for t in tasks if t['id'] == task_id), None)
+    room_code = request.args.get('room')
+    room, err = require_room(room_code)
+    if err:
+        return err
+    
+    task = next((t for t in room['tasks'] if t['id'] == task_id), None)
     
     if not task:
         return jsonify({"error": "Task not found"}), 404
@@ -114,13 +216,10 @@ def update_task(task_id):
         if data['due_date'] is None:
             task['due_date'] = None
         else:
-            try:
-                task['due_date'] = datetime.strptime(data['due_date'], '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
-            except ValueError:
-                try:
-                    task['due_date'] = datetime.strptime(data['due_date'], '%Y-%m-%d').strftime('%Y-%m-%d %H:%M:%S')
-                except ValueError:
-                    return jsonify({"error": "Invalid due_date format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS"}), 400
+            due_date = parse_due_date_str(data['due_date'])
+            if not due_date:
+                return jsonify({"error": "Invalid due_date format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS"}), 400
+            task['due_date'] = due_date
     
     return jsonify({
         "message": "Task updated successfully",
@@ -129,13 +228,17 @@ def update_task(task_id):
 
 @app.route('/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
-    global tasks
-    task = next((t for t in tasks if t['id'] == task_id), None)
+    room_code = request.args.get('room')
+    room, err = require_room(room_code)
+    if err:
+        return err
+    
+    task = next((t for t in room['tasks'] if t['id'] == task_id), None)
     
     if not task:
         return jsonify({"error": "Task not found"}), 404
     
-    tasks = [t for t in tasks if t['id'] != task_id]
+    room['tasks'] = [t for t in room['tasks'] if t['id'] != task_id]
     
     return jsonify({
         "message": "Task deleted successfully",
@@ -144,13 +247,18 @@ def delete_task(task_id):
 
 @app.route('/tasks/<int:task_id>/complete', methods=['POST'])
 def complete_task(task_id):
-    task = next((t for t in tasks if t['id'] == task_id), None)
+    room_code = request.args.get('room')
+    room, err = require_room(room_code)
+    if err:
+        return err
+    
+    task = next((t for t in room['tasks'] if t['id'] == task_id), None)
     
     if not task:
         return jsonify({"error": "Task not found"}), 404
     
     task['completed'] = True
-    task['completed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    task['completed_at'] = now_str()
     
     return jsonify({
         "message": "Task marked as completed",
@@ -159,13 +267,18 @@ def complete_task(task_id):
 
 @app.route('/tasks/stats', methods=['GET'])
 def get_stats():
-    total_tasks = len(tasks)
-    completed_tasks = len([t for t in tasks if t['completed']])
+    room_code = request.args.get('room')
+    room, err = require_room(room_code)
+    if err:
+        return err
+    
+    total_tasks = len(room['tasks'])
+    completed_tasks = len([t for t in room['tasks'] if t['completed']])
     pending_tasks = total_tasks - completed_tasks
     overdue_tasks = 0
     
     now = datetime.now()
-    for task in tasks:
+    for task in room['tasks']:
         if not task['completed'] and task['due_date']:
             due_date = datetime.strptime(task['due_date'], '%Y-%m-%d %H:%M:%S')
             if due_date < now:
@@ -182,11 +295,15 @@ def get_stats():
 if __name__ == '__main__':
     print("Starting Task Manager API with web UI...")
     print("Available endpoints:")
+    print("   POST /rooms               - Create new room")
+    print("   GET  /rooms/<code>        - Get room info")
+    print("   POST /rooms/<code>/join   - Join room")
     print("   GET  /tasks               - Get all tasks (with filtering)")
     print("   POST /tasks              - Create new task")
     print("   PUT  /tasks/<id>         - Update specific task")
     print("   DELETE /tasks/<id>       - Delete specific task")
     print("   POST /tasks/<id>/complete - Mark task as completed")
     print("   GET  /tasks/stats        - Get task statistics")
+    print("   GET  /health             - Health check endpoint")
     print("Web interface available at http://localhost:5125/")
     app.run(host='0.0.0.0', port=5125, debug=True)
