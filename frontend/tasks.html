@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task List</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/tasks.html">Tasks</a>
+    </nav>
+    <main>
+        <h1>Tasks</h1>
+        <div id="error" class="error"></div>
+        <button id="open-modal">Add Task</button>
+        <div id="task-modal" class="modal hidden">
+            <div class="modal-content">
+                <button id="close-modal" class="close">&times;</button>
+                <form id="task-form">
+                    <input type="text" id="title" placeholder="Title" required />
+                    <input type="text" id="description" placeholder="Description" />
+                    <select id="priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                    <button type="submit">Save</button>
+                </form>
+            </div>
+        </div>
+        <div id="task-tables">
+            <section class="task-section">
+                <h2>High Priority</h2>
+                <table class="task-table">
+                    <thead>
+                        <tr><th>Title</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody id="high-body"></tbody>
+                </table>
+            </section>
+            <section class="task-section">
+                <h2>Medium Priority</h2>
+                <table class="task-table">
+                    <thead>
+                        <tr><th>Title</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody id="medium-body"></tbody>
+                </table>
+            </section>
+            <section class="task-section">
+                <h2>Low Priority</h2>
+                <table class="task-table">
+                    <thead>
+                        <tr><th>Title</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody id="low-body"></tbody>
+                </table>
+            </section>
+            <section class="task-section">
+                <h2>Completed Tasks</h2>
+                <table class="task-table">
+                    <thead>
+                        <tr><th>Title</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody id="completed-body"></tbody>
+                </table>
+            </section>
+        </div>
+        <section>
+            <h2>Statistics</h2>
+            <div id="stats"></div>
+        </section>
+    </main>
+    <script src="tasks.js"></script>
+</body>
+</html>
