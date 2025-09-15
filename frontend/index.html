@@ -4,17 +4,42 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Task Manager</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="home-styles.css" />
 </head>
 <body>
     <nav>
         <a href="/">Home</a>
         <a href="/tasks.html">Tasks</a>
     </nav>
+
     <main>
-        <h1>Welcome to Task Manager</h1>
-        <p>This simple web interface connects to the Task Manager API.</p>
-        <p>Use the navigation above to manage your tasks.</p>
+        <div class="center-buttons">
+            <button id="join-btn" class="big-btn">Join a Room</button>
+            <button id="create-btn" class="big-btn">Create a Room</button>
+        </div>
     </main>
+
+    <!-- Join Modal -->
+    <div id="join-modal" class="modal hidden">
+        <div class="modal-content">
+            <button class="close" data-close>&times;</button>
+            <h2>Join a Room</h2>
+            <input type="text" id="join-name" placeholder="Your Name" required />
+            <input type="text" id="join-code" placeholder="Room Code" required />
+            <button id="join-room" class="modal-action">Join</button>
+        </div>
+    </div>
+
+    <!-- Create Modal -->
+    <div id="create-modal" class="modal hidden">
+        <div class="modal-content">
+            <button class="close" data-close>&times;</button>
+            <h2>Create a Room</h2>
+            <input type="text" id="create-name" placeholder="Your Name" required />
+            <button id="create-room" class="modal-action">Create</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
