@@ -31,24 +31,24 @@ async function loadTasks() {
     showError('');
     try {
         const data = await fetchJSON('/tasks');
-        const list = document.getElementById('tasks');
-        list.innerHTML = '';
+        const groups = {
+            high: document.getElementById('high-body'),
+            medium: document.getElementById('medium-body'),
+            low: document.getElementById('low-body')
+        };
+        Object.values(groups).forEach(t => t.innerHTML = '');
         data.tasks.forEach(task => {
-            const li = document.createElement('li');
-            li.dataset.id = task.id;
-            li.className = task.completed ? 'completed' : '';
-            li.innerHTML = `<span>${task.title} (${task.priority})</span>`;
+            const row = document.createElement('tr');
+            row.dataset.id = task.id;
+            row.className = task.completed ? 'completed' : '';
+            let actions = '';
             if (!task.completed) {
-                const completeBtn = document.createElement('button');
-                completeBtn.textContent = 'Complete';
-                completeBtn.dataset.action = 'complete';
-                li.appendChild(completeBtn);
+                actions += `<button data-action="complete">Complete</button>`;
             }
-            const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = 'Delete';
-            deleteBtn.dataset.action = 'delete';
-            li.appendChild(deleteBtn);
-            list.appendChild(li);
+            actions += `<button data-action="delete">Delete</button>`;
+            row.innerHTML = `<td>${task.title}</td><td>${task.description || ''}</td><td>${actions}</td>`;
+            const group = groups[task.priority] || groups.medium;
+            group.appendChild(row);
         });
         const stats = await fetchJSON('/tasks/stats');
         document.getElementById('stats').textContent = `Total: ${stats.total_tasks}, Completed: ${stats.completed_tasks}, Pending: ${stats.pending_tasks}, Overdue: ${stats.overdue_tasks}`;
@@ -75,10 +75,10 @@ document.getElementById('task-form').addEventListener('submit', async (e) => {
     }
 });
 
-document.getElementById('tasks').addEventListener('click', async (e) => {
+document.getElementById('task-tables').addEventListener('click', async (e) => {
     const action = e.target.dataset.action;
     if (!action) return;
-    const id = e.target.closest('li').dataset.id;
+    const id = e.target.closest('tr').dataset.id;
     try {
         if (action === 'delete') {
             await fetchJSON(`/tasks/${id}`, { method: 'DELETE' });
