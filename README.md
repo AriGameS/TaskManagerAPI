@@ -34,6 +34,7 @@ The Flask app serves a simple frontend from the `frontend` directory. It provide
 - Each task has "Complete" and "Delete" buttons with icons for finishing or removing tasks.
 - Statistics are pinned to the bottom-left corner, and error messages appear inline for failed requests.
 
+
 ## API Endpoints
 
 ### Task Management
