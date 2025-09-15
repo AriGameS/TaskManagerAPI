@@ -95,6 +95,10 @@ button[data-action="complete"] {
     align-items: center;
     justify-content: center;
 }
+/* Ensure hidden modals stay hidden */
+.modal.hidden {
+    display: none;
+}
 .modal-content {
     background: #1e1e1e;
     padding: 1.5rem;
