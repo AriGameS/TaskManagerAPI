@@ -34,21 +34,25 @@ async function loadTasks() {
         const groups = {
             high: document.getElementById('high-body'),
             medium: document.getElementById('medium-body'),
-            low: document.getElementById('low-body')
+            low: document.getElementById('low-body'),
+            completed: document.getElementById('completed-body')
         };
         Object.values(groups).forEach(t => t.innerHTML = '');
         data.tasks.forEach(task => {
+            let actions = `<button data-action="delete">Delete</button>`;
+            if (!task.completed) {
+                actions = `<button data-action="complete">Complete</button>` + actions;
+            }
             const row = document.createElement('tr');
             row.dataset.id = task.id;
-            row.className = task.completed ? 'completed' : '';
-            let actions = '';
-            if (!task.completed) {
-                actions += `<button data-action="complete">Complete</button>`;
-            }
-            actions += `<button data-action="delete">Delete</button>`;
-            row.innerHTML = `<td>${task.title}</td><td>${task.description || ''}</td><td>${actions}</td>`;
-            const group = groups[task.priority] || groups.medium;
+            row.className = 'task-row' + (task.completed ? ' completed' : '');
+            row.innerHTML = `<td>${task.title}</td><td>${actions}</td>`;
+            const descRow = document.createElement('tr');
+            descRow.className = 'desc-row hidden';
+            descRow.innerHTML = `<td colspan="2">${task.description || ''}</td>`;
+            const group = task.completed ? groups.completed : (groups[task.priority] || groups.medium);
             group.appendChild(row);
+            group.appendChild(descRow);
         });
         const stats = await fetchJSON('/tasks/stats');
         document.getElementById('stats').textContent = `Total: ${stats.total_tasks}, Completed: ${stats.completed_tasks}, Pending: ${stats.pending_tasks}, Overdue: ${stats.overdue_tasks}`;
@@ -56,6 +60,14 @@ async function loadTasks() {
         console.error(err);
     }
 }
+
+document.getElementById('open-modal').addEventListener('click', () => {
+    document.getElementById('task-modal').classList.remove('hidden');
+});
+
+document.getElementById('close-modal').addEventListener('click', () => {
+    document.getElementById('task-modal').classList.add('hidden');
+});
 
 document.getElementById('task-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -69,6 +81,7 @@ document.getElementById('task-form').addEventListener('submit', async (e) => {
             body: JSON.stringify({ title, description, priority })
         });
         e.target.reset();
+        document.getElementById('task-modal').classList.add('hidden');
         loadTasks();
     } catch (err) {
         console.error(err);
@@ -77,17 +90,26 @@ document.getElementById('task-form').addEventListener('submit', async (e) => {
 
 document.getElementById('task-tables').addEventListener('click', async (e) => {
     const action = e.target.dataset.action;
-    if (!action) return;
-    const id = e.target.closest('tr').dataset.id;
-    try {
-        if (action === 'delete') {
-            await fetchJSON(`/tasks/${id}`, { method: 'DELETE' });
-        } else if (action === 'complete') {
-            await fetchJSON(`/tasks/${id}/complete`, { method: 'POST' });
+    if (action) {
+        const id = e.target.closest('tr').dataset.id;
+        try {
+            if (action === 'delete') {
+                await fetchJSON(`/tasks/${id}`, { method: 'DELETE' });
+            } else if (action === 'complete') {
+                await fetchJSON(`/tasks/${id}/complete`, { method: 'POST' });
+            }
+            loadTasks();
+        } catch (err) {
+            console.error(err);
         }
-        loadTasks();
-    } catch (err) {
-        console.error(err);
+        return;
+    }
+    const taskRow = e.target.closest('tr.task-row');
+    if (taskRow) {
+        const descRow = taskRow.nextElementSibling;
+        if (descRow && descRow.classList.contains('desc-row')) {
+            descRow.classList.toggle('hidden');
+        }
     }
 });
 

@@ -30,7 +30,7 @@ Open http://localhost:5000 in your browser to use the web interface. The API is 
 The Flask app serves a simple frontend from the `frontend` directory. It provides:
 
 - A home page with navigation links.
-- A tasks page to view, create, complete, and delete tasks.
+- A tasks page with side-by-side priority tables, a modal form for new tasks, description toggling on click, and a separate completed list.
 - Display of basic task statistics and error messages for failed requests.
 
 ## API Endpoints
