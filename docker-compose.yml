@@ -4,7 +4,7 @@ services:
   task-manager:
     build: .
     ports:
-      - "5000:5000"
+      - "5125:5125"
     environment:
       - FLASK_ENV=development
     restart: unless-stopped

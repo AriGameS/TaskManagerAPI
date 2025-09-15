@@ -178,5 +178,5 @@ if __name__ == '__main__':
     print("   DELETE /tasks/<id>       - Delete specific task")
     print("   POST /tasks/<id>/complete - Mark task as completed")
     print("   GET  /tasks/stats        - Get task statistics")
-    print("Web interface available at http://localhost:5000/")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    print("Web interface available at http://localhost:5125/")
+    app.run(host='0.0.0.0', port=5125, debug=True)

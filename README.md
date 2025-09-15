@@ -23,7 +23,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open http://localhost:5000 in your browser to use the web interface. The API is also available at this address.
+Open http://localhost:5125 in your browser to use the web interface. The API is also available at this address.
 
 ## Web Interface
 
@@ -56,7 +56,7 @@ The Flask app serves a simple frontend from the `frontend` directory. It provide
 
 ### Create New Task
 ```bash
-curl -X POST http://localhost:5000/tasks \
+curl -X POST http://localhost:5125/tasks \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Complete project report",
@@ -68,7 +68,7 @@ curl -X POST http://localhost:5000/tasks \
 
 ### Create Simple Task
 ```bash
-curl -X POST http://localhost:5000/tasks \
+curl -X POST http://localhost:5125/tasks \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Buy groceries",
@@ -78,27 +78,27 @@ curl -X POST http://localhost:5000/tasks \
 
 ### Get All Tasks
 ```bash
-curl http://localhost:5000/tasks
+curl http://localhost:5125/tasks
 ```
 
 ### Get Completed Tasks Only
 ```bash
-curl "http://localhost:5000/tasks?status=completed"
+curl "http://localhost:5125/tasks?status=completed"
 ```
 
 ### Get High Priority Tasks
 ```bash
-curl "http://localhost:5000/tasks?priority=high"
+curl "http://localhost:5125/tasks?priority=high"
 ```
 
 ### Mark Task as Completed
 ```bash
-curl -X POST http://localhost:5000/tasks/1/complete
+curl -X POST http://localhost:5125/tasks/1/complete
 ```
 
 ### Update Task
 ```bash
-curl -X PUT http://localhost:5000/tasks/1 \
+curl -X PUT http://localhost:5125/tasks/1 \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Updated task title",
@@ -109,12 +109,12 @@ curl -X PUT http://localhost:5000/tasks/1 \
 
 ### Delete Task
 ```bash
-curl -X DELETE http://localhost:5000/tasks/1
+curl -X DELETE http://localhost:5125/tasks/1
 ```
 
 ### Get Task Statistics
 ```bash
-curl http://localhost:5000/tasks/stats
+curl http://localhost:5125/tasks/stats
 ```
 
 ## Response Examples
@@ -198,7 +198,7 @@ docker-compose down
 docker build -t task-manager .
 
 # Run container
-docker run -p 5000:5000 task-manager
+docker run -p 5125:5125 task-manager
 ```
 
 ## Error Handling
