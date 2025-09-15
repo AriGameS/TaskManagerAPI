@@ -31,7 +31,9 @@ The Flask app serves a simple frontend from the `frontend` directory. It provide
 
 - A home page with navigation links.
 - A tasks page with side-by-side priority tables, a modal form for new tasks, description toggling on click, and a separate completed list.
-- Display of basic task statistics and error messages for failed requests.
+- Each task shows check and trash icons for completion and deletion.
+- Statistics are pinned to the bottom-left corner, and error messages appear inline for failed requests.
+
 
 ## API Endpoints
 

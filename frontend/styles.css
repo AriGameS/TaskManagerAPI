@@ -20,9 +20,7 @@ nav a:hover {
 main {
     max-width: 1200px;
     margin: 2rem auto;
-    background: #1e1e1e;
-    padding: 2rem;
-    border-radius: 8px;
+    padding: 0 2rem;
 }
 #task-tables {
     display: flex;
@@ -31,7 +29,19 @@ main {
 }
 .task-section {
     flex: 1;
-    margin-top: 2rem;
+    margin-top: 1rem;
+    background: #1e1e1e;
+    padding: 1rem;
+    border-radius: 8px;
+}
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+.add-btn {
+    padding: 0.5rem 1rem;
 }
 form {
     display: flex;
@@ -55,11 +65,18 @@ button {
     background: #3f51b5;
     color: #fff;
 }
-button[data-action="delete"] {
-    background: #e53935;
+.actions {
+    float: right;
 }
-button[data-action="complete"] {
-    background: #43a047;
+.actions i {
+    margin-left: 0.5rem;
+    cursor: pointer;
+}
+.actions .fa-check {
+    color: #43a047;
+}
+.actions .fa-trash {
+    color: #e53935;
 }
 .task-table {
     width: 100%;
@@ -117,4 +134,14 @@ button[data-action="complete"] {
     color: #ff6b6b;
     margin-bottom: 1rem;
     display: none;
+}
+
+.stats {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    background: #1e1e1e;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
 }
