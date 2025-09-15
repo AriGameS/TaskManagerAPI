@@ -16,14 +16,22 @@ A comprehensive Flask REST API for managing tasks with priorities, due dates, an
 ## Quick Start
 
 ```bash
-# Install Flask
+# Install dependencies
 pip install -r requirements.txt
 
 # Run the app
 python app.py
 ```
 
-API will be available at: http://localhost:5000
+Open http://localhost:5000 in your browser to use the web interface. The API is also available at this address.
+
+## Web Interface
+
+The Flask app serves a simple frontend from the `frontend` directory. It provides:
+
+- A home page with navigation links.
+- A tasks page to view, create, complete, and delete tasks.
+- Display of basic task statistics and error messages for failed requests.
 
 ## API Endpoints
 
