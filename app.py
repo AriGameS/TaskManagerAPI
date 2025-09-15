@@ -1,12 +1,17 @@
 from flask import Flask, request, jsonify
 from datetime import datetime
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='frontend', static_url_path='')
 
 # Simple in-memory storage for tasks
 tasks = []
 
 @app.route('/', methods=['GET'])
+def index():
+    return app.send_static_file('index.html')
+
+
+@app.route('/api', methods=['GET'])
 def home():
     return "Task Manager API - Use /tasks endpoint"
 
@@ -165,7 +170,7 @@ def get_stats():
     })
 
 if __name__ == '__main__':
-    print("Starting Enhanced Task Manager API...")
+    print("Starting Task Manager API with web UI...")
     print("Available endpoints:")
     print("   GET  /tasks               - Get all tasks (with filtering)")
     print("   POST /tasks              - Create new task")
@@ -173,5 +178,5 @@ if __name__ == '__main__':
     print("   DELETE /tasks/<id>       - Delete specific task")
     print("   POST /tasks/<id>/complete - Mark task as completed")
     print("   GET  /tasks/stats        - Get task statistics")
-    print("Server running on http://localhost:5000")
+    print("Web interface available at http://localhost:5000/")
     app.run(host='0.0.0.0', port=5000, debug=True)
