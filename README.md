@@ -225,6 +225,68 @@ Example error response:
 - `docker-compose.yml` - Easy container orchestration
 - `README.md` - This documentation
 
+## Testing
+
+The project includes comprehensive testing with multiple approaches:
+
+### Test Types
+
+1. **Unit Tests** - Test individual functions and components
+2. **Integration Tests** - Test API endpoints as a running service
+3. **Curl Tests** - Simple command-line tests for basic functionality
+
+### Running Tests
+
+#### Install Test Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+#### Run All Tests
+```bash
+python run_tests.py
+```
+
+#### Run Specific Test Types
+```bash
+# Unit tests only
+python run_tests.py --type pytest
+
+# Integration tests only (requires running API)
+python run_tests.py --type curl
+
+# Verbose output
+python run_tests.py --verbose
+```
+
+#### Manual Testing with Curl
+```bash
+# Make sure API is running first
+python app.py
+
+# In another terminal, run curl tests
+bash tests/test_curl.sh
+```
+
+#### Test Coverage
+```bash
+# Run tests with coverage report
+python -m pytest --cov=app --cov-report=html
+
+# View coverage report
+open htmlcov/index.html
+```
+
+### Test Structure
+```
+tests/
+├── __init__.py
+├── conftest.py              # Test fixtures and configuration
+├── test_app.py              # Unit tests for Flask app
+├── test_api_integration.py  # Integration tests
+└── test_curl.sh            # Curl-based tests
+```
+
 ## Development Notes
 
 - Tasks are stored in memory and will be lost when the application restarts
@@ -232,3 +294,4 @@ Example error response:
 - The API automatically tracks overdue tasks based on current time
 - Task IDs are sequential and auto-generated
 - Completion timestamps are automatically set when marking tasks complete
+- Comprehensive test suite ensures API reliability and functionality
