@@ -15,6 +15,16 @@ def index():
 def home():
     return "Task Manager API - Use /tasks endpoint"
 
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint for monitoring and load balancers."""
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "version": "1.0.0",
+        "uptime": "running"
+    })
+
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
     status_filter = request.args.get('status')

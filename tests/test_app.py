@@ -357,6 +357,17 @@ class TestAPIEndpoints:
         assert response.status_code == 200
         assert response.data.decode() == "Task Manager API - Use /tasks endpoint"
 
+    def test_health_endpoint(self, client):
+        """Test the health check endpoint."""
+        response = client.get('/health')
+        
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data['status'] == 'healthy'
+        assert 'timestamp' in data
+        assert data['version'] == '1.0.0'
+        assert data['uptime'] == 'running'
+
     def test_index_endpoint(self, client):
         """Test the index endpoint serves the frontend."""
         response = client.get('/')

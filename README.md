@@ -225,6 +225,38 @@ Example error response:
 - `docker-compose.yml` - Easy container orchestration
 - `README.md` - This documentation
 
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment with a multi-branch workflow:
+
+### Workflows
+
+- **Continuous Integration** - Runs on all branches with multi-Python version testing
+- **Pull Request Checks** - Validates code quality and test coverage for PRs
+- **Deploy to Production** - Automatically deploys main branch to production
+- **Develop Pipeline** - Deploys develop branch to staging environment
+- **Feature Pipeline** - Validates feature branches
+- **Hotfix Pipeline** - Handles emergency fixes with security scans
+- **Scheduled Maintenance** - Weekly security and dependency checks
+- **Release Pipeline** - Creates releases and deploys versioned releases
+
+### Branch Strategy
+
+- `main` - Production-ready code (protected, requires reviews)
+- `develop` - Integration branch for features
+- `feature/*` - Feature development branches
+- `hotfix/*` - Emergency fixes for production
+
+### Quality Gates
+
+- All tests must pass (unit, integration, curl tests)
+- Code coverage ≥ 80%
+- Security scans must pass
+- Docker build must succeed
+- Code quality checks (flake8, black, isort)
+
+For detailed information, see [Branch Strategy Documentation](.github/BRANCH_STRATEGY.md).
+
 ## Testing
 
 The project includes comprehensive testing with multiple approaches:
