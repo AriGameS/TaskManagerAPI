@@ -45,16 +45,26 @@ class TestAPIIntegration:
         try:
             base_url = 'http://localhost:5125'
             
+            # 0. Create a room first
+            room_response = requests.post(
+                f'{base_url}/rooms',
+                json={"username": "testuser"},
+                timeout=5
+            )
+            assert room_response.status_code == 201
+            room_code = room_response.json()['room_code']
+            
             # 1. Create a task
             task_data = {
                 "title": "Integration Test Task",
                 "description": "Testing full lifecycle",
                 "priority": "high",
-                "due_date": "2025-12-31 23:59:59"
+                "due_date": "2025-12-31 23:59:59",
+                "room_code": room_code
             }
             
             response = requests.post(
-                f'{base_url}/tasks',
+                f'{base_url}/tasks?room={room_code}',
                 json=task_data,
                 timeout=5
             )
@@ -63,7 +73,7 @@ class TestAPIIntegration:
             task_id = created_task['id']
             
             # 2. Read the task
-            response = requests.get(f'{base_url}/tasks', timeout=5)
+            response = requests.get(f'{base_url}/tasks?room={room_code}', timeout=5)
             assert response.status_code == 200
             tasks = response.json()['tasks']
             assert len(tasks) == 1
@@ -75,7 +85,7 @@ class TestAPIIntegration:
                 "priority": "medium"
             }
             response = requests.put(
-                f'{base_url}/tasks/{task_id}',
+                f'{base_url}/tasks/{task_id}?room={room_code}',
                 json=update_data,
                 timeout=5
             )
@@ -86,7 +96,7 @@ class TestAPIIntegration:
             
             # 4. Complete the task
             response = requests.post(
-                f'{base_url}/tasks/{task_id}/complete',
+                f'{base_url}/tasks/{task_id}/complete?room={room_code}',
                 timeout=5
             )
             assert response.status_code == 200
@@ -95,7 +105,7 @@ class TestAPIIntegration:
             assert completed_task['completed_at'] is not None
             
             # 5. Check statistics
-            response = requests.get(f'{base_url}/tasks/stats', timeout=5)
+            response = requests.get(f'{base_url}/tasks/stats?room={room_code}', timeout=5)
             assert response.status_code == 200
             stats = response.json()
             assert stats['total_tasks'] == 1
@@ -103,11 +113,11 @@ class TestAPIIntegration:
             assert stats['pending_tasks'] == 0
             
             # 6. Delete the task
-            response = requests.delete(f'{base_url}/tasks/{task_id}', timeout=5)
+            response = requests.delete(f'{base_url}/tasks/{task_id}?room={room_code}', timeout=5)
             assert response.status_code == 200
             
             # 7. Verify task is deleted
-            response = requests.get(f'{base_url}/tasks', timeout=5)
+            response = requests.get(f'{base_url}/tasks?room={room_code}', timeout=5)
             assert response.status_code == 200
             tasks = response.json()['tasks']
             assert len(tasks) == 0
@@ -120,14 +130,24 @@ class TestAPIIntegration:
         try:
             base_url = 'http://localhost:5125'
             
+            # Create a room first
+            room_response = requests.post(
+                f'{base_url}/rooms',
+                json={"username": "concurrentuser"},
+                timeout=5
+            )
+            assert room_response.status_code == 201
+            room_code = room_response.json()['room_code']
+            
             def create_task(task_num):
                 task_data = {
                     "title": f"Concurrent Task {task_num}",
                     "description": f"Task created concurrently {task_num}",
-                    "priority": "medium"
+                    "priority": "medium",
+                    "room_code": room_code
                 }
                 response = requests.post(
-                    f'{base_url}/tasks',
+                    f'{base_url}/tasks?room={room_code}',
                     json=task_data,
                     timeout=5
                 )
@@ -143,7 +163,7 @@ class TestAPIIntegration:
             assert all(results)
             
             # Verify all tasks exist
-            response = requests.get(f'{base_url}/tasks', timeout=5)
+            response = requests.get(f'{base_url}/tasks?room={room_code}', timeout=5)
             assert response.status_code == 200
             tasks = response.json()['tasks']
             assert len(tasks) == 5
@@ -156,39 +176,48 @@ class TestAPIIntegration:
         try:
             base_url = 'http://localhost:5125'
             
+            # Create a room first
+            room_response = requests.post(
+                f'{base_url}/rooms',
+                json={"username": "filteruser"},
+                timeout=5
+            )
+            assert room_response.status_code == 201
+            room_code = room_response.json()['room_code']
+            
             # Create test tasks
             test_tasks = [
-                {"title": "High Priority Task", "priority": "high"},
-                {"title": "Medium Priority Task", "priority": "medium"},
-                {"title": "Low Priority Task", "priority": "low"}
+                {"title": "High Priority Task", "priority": "high", "room_code": room_code},
+                {"title": "Medium Priority Task", "priority": "medium", "room_code": room_code},
+                {"title": "Low Priority Task", "priority": "low", "room_code": room_code}
             ]
             
             for task_data in test_tasks:
                 response = requests.post(
-                    f'{base_url}/tasks',
+                    f'{base_url}/tasks?room={room_code}',
                     json=task_data,
                     timeout=5
                 )
                 assert response.status_code == 201
             
             # Complete one task
-            requests.post(f'{base_url}/tasks/1/complete', timeout=5)
+            requests.post(f'{base_url}/tasks/1/complete?room={room_code}', timeout=5)
             
             # Test priority filtering
-            response = requests.get(f'{base_url}/tasks?priority=high', timeout=5)
+            response = requests.get(f'{base_url}/tasks?room={room_code}&priority=high', timeout=5)
             assert response.status_code == 200
             tasks = response.json()['tasks']
             assert len(tasks) == 1
             assert tasks[0]['priority'] == 'high'
             
             # Test status filtering
-            response = requests.get(f'{base_url}/tasks?status=completed', timeout=5)
+            response = requests.get(f'{base_url}/tasks?room={room_code}&status=completed', timeout=5)
             assert response.status_code == 200
             tasks = response.json()['tasks']
             assert len(tasks) == 1
             assert tasks[0]['completed'] is True
             
-            response = requests.get(f'{base_url}/tasks?status=pending', timeout=5)
+            response = requests.get(f'{base_url}/tasks?room={room_code}&status=pending', timeout=5)
             assert response.status_code == 200
             tasks = response.json()['tasks']
             assert len(tasks) == 2
@@ -203,26 +232,32 @@ class TestAPIIntegration:
         try:
             base_url = 'http://localhost:5125'
             
-            # Test 404 for non-existent task
-            response = requests.get(f'{base_url}/tasks/999', timeout=5)
-            assert response.status_code == 404
+            # Create a room first
+            room_response = requests.post(
+                f'{base_url}/rooms',
+                json={"username": "erroruser"},
+                timeout=5
+            )
+            assert room_response.status_code == 201
+            room_code = room_response.json()['room_code']
             
+            # Test 404 for non-existent task
             response = requests.put(
-                f'{base_url}/tasks/999',
+                f'{base_url}/tasks/999?room={room_code}',
                 json={"title": "Update"},
                 timeout=5
             )
             assert response.status_code == 404
             
-            response = requests.delete(f'{base_url}/tasks/999', timeout=5)
+            response = requests.delete(f'{base_url}/tasks/999?room={room_code}', timeout=5)
             assert response.status_code == 404
             
-            response = requests.post(f'{base_url}/tasks/999/complete', timeout=5)
+            response = requests.post(f'{base_url}/tasks/999/complete?room={room_code}', timeout=5)
             assert response.status_code == 404
             
             # Test 400 for invalid data
             response = requests.post(
-                f'{base_url}/tasks',
+                f'{base_url}/tasks?room={room_code}',
                 json={"description": "No title"},
                 timeout=5
             )
