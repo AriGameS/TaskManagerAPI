@@ -1,19 +1,21 @@
 # Task Manager API
 
-A comprehensive Flask REST API for managing tasks with priorities, due dates, and completion tracking.
+A Flask REST API for managing collaborative tasks with room-based workspaces, priorities, and due dates.
 
 ## Features
 
-- Create, read, update, and delete tasks
-- Mark tasks as completed with completion timestamps
-- Set task priorities (high, medium, low)
-- Schedule tasks with due dates and times
-- Filter tasks by status and priority
-- Track overdue tasks automatically
-- Get comprehensive task statistics
-- RESTful API design with proper HTTP methods
+- **Room-based Collaboration** - Create and join rooms for team task management
+- **Task Management** - Create, read, update, and delete tasks
+- **Priority Levels** - High, medium, and low priority tasks
+- **Due Dates** - Schedule tasks with deadline tracking
+- **Status Tracking** - Mark tasks as completed with timestamps
+- **Filtering** - Filter tasks by status and priority
+- **Statistics** - Track task completion and overdue items
+- **Web Interface** - Modern UI for easy task management
 
 ## Quick Start
+
+### Local Development
 
 ```bash
 # Install dependencies
@@ -23,140 +25,169 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open http://localhost:5125 in your browser to use the web interface. The API is also available at this address.
+Open http://localhost:5125 in your browser to use the web interface.
 
-## Web Interface
+### Docker
 
-The Flask app serves a simple frontend from the `frontend` directory. It provides:
+```bash
+# Build and run with Docker
+docker-compose up -d
+```
 
-- A home page with navigation links.
-- A tasks page with side-by-side priority tables, a modal form for new tasks, description toggling on click, and a separate completed list.
-- Each task has "Complete" and "Delete" buttons with icons for finishing or removing tasks.
-- Statistics are pinned to the bottom-left corner, and error messages appear inline for failed requests.
-
+Access the app at http://localhost:5125
 
 ## API Endpoints
 
+### Room Management
+- `POST /rooms` - Create a new room
+- `GET /rooms/<code>` - Get room information
+- `POST /rooms/<code>/join` - Join an existing room
+
 ### Task Management
-- `GET /tasks` - Get all tasks (with optional filtering)
-- `POST /tasks` - Create new task
-- `PUT /tasks/<id>` - Update specific task
-- `DELETE /tasks/<id>` - Delete specific task
+- `GET /tasks?room=<code>` - Get all tasks in a room
+- `POST /tasks?room=<code>` - Create new task
+- `PUT /tasks/<id>?room=<code>` - Update specific task
+- `DELETE /tasks/<id>?room=<code>` - Delete specific task
+- `POST /tasks/<id>/complete?room=<code>` - Mark task as completed
+- `GET /tasks/stats?room=<code>` - Get task statistics
 
-### Task Actions
-- `POST /tasks/<id>/complete` - Mark task as completed
-- `GET /tasks/stats` - Get task statistics
-
-### Filtering Options
-- `GET /tasks?status=completed` - Get only completed tasks
-- `GET /tasks?status=pending` - Get only pending tasks
-- `GET /tasks?priority=high` - Get tasks by priority level
+### Health Check
+- `GET /health` - Health check endpoint for monitoring
 
 ## Usage Examples
 
-### Create New Task
+### 1. Create a Room
 ```bash
-curl -X POST http://localhost:5125/tasks \
+curl -X POST http://localhost:5125/rooms \
+  -H "Content-Type: application/json" \
+  -d '{"username": "Alice"}'
+```
+
+Response:
+```json
+{
+  "room_code": "ABC123",
+  "room": {
+    "code": "ABC123",
+    "owner": "Alice",
+    "members": ["Alice"],
+    "created_at": "2025-09-30 12:00:00",
+    "tasks": []
+  }
+}
+```
+
+### 2. Create a Task
+```bash
+curl -X POST "http://localhost:5125/tasks?room=ABC123" \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Complete project report",
-    "description": "Finish the quarterly analysis report",
+    "title": "Complete project",
+    "description": "Finish the quarterly report",
     "priority": "high",
-    "due_date": "2025-08-15 17:00:00"
+    "due_date": "2025-12-31 23:59:59"
   }'
 ```
 
-### Create Simple Task
+### 3. Get All Tasks
 ```bash
-curl -X POST http://localhost:5125/tasks \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Buy groceries",
-    "description": "Milk, bread, eggs"
-  }'
+curl "http://localhost:5125/tasks?room=ABC123"
 ```
 
-### Get All Tasks
+### 4. Mark Task as Completed
 ```bash
-curl http://localhost:5125/tasks
+curl -X POST "http://localhost:5125/tasks/1/complete?room=ABC123"
 ```
 
-### Get Completed Tasks Only
+### 5. Get Statistics
 ```bash
-curl "http://localhost:5125/tasks?status=completed"
+curl "http://localhost:5125/tasks/stats?room=ABC123"
 ```
 
-### Get High Priority Tasks
+## Project Structure
+
+```
+.
+├── app.py                      # Main Flask application
+├── requirements.txt            # Python dependencies
+├── Dockerfile                  # Container configuration
+├── docker-compose.yml          # Docker Compose setup
+├── pytest.ini                  # Pytest configuration
+├── frontend/                   # Web interface
+│   ├── index.html             # Landing page
+│   ├── tasks.html             # Task management page
+│   ├── home-styles.css        # Landing page styles
+│   ├── styles.css             # Task page styles
+│   ├── script.js              # Landing page logic
+│   └── tasks.js               # Task page logic
+├── tests/                      # Test suite
+│   ├── __init__.py
+│   ├── conftest.py            # Test fixtures
+│   ├── test_app.py            # Unit tests
+│   └── test_api_integration.py # Integration tests
+└── .github/workflows/          # CI/CD pipelines
+    ├── ci.yml                 # Continuous Integration
+    └── deploy.yml             # Deployment pipeline
+```
+
+## Testing
+
+### Run All Tests
 ```bash
-curl "http://localhost:5125/tasks?priority=high"
+pytest
 ```
 
-### Mark Task as Completed
+### Run with Coverage
 ```bash
-curl -X POST http://localhost:5125/tasks/1/complete
+pytest --cov=app --cov-report=term-missing
 ```
 
-### Update Task
+### Run Specific Tests
 ```bash
-curl -X PUT http://localhost:5125/tasks/1 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Updated task title",
-    "priority": "medium",
-    "completed": true
-  }'
+# Unit tests only
+pytest tests/test_app.py
+
+# Integration tests only
+pytest tests/test_api_integration.py
 ```
 
-### Delete Task
+## Docker
+
+### Build Image
 ```bash
-curl -X DELETE http://localhost:5125/tasks/1
+docker build -t taskmanager-api .
 ```
 
-### Get Task Statistics
+### Run Container
 ```bash
-curl http://localhost:5125/tasks/stats
+docker run -d -p 5125:5125 taskmanager-api
 ```
 
-## Response Examples
+### Using Docker Compose
+```bash
+# Start services
+docker-compose up -d
 
-### Task Object
-```json
-{
-  "id": 1,
-  "title": "Complete project report",
-  "description": "Finish the quarterly analysis report",
-  "priority": "high",
-  "due_date": "2025-08-15 17:00:00",
-  "completed": false,
-  "completed_at": null,
-  "created_at": "2025-08-01 12:30:00"
-}
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
 ```
 
-### Completed Task
-```json
-{
-  "id": 1,
-  "title": "Complete project report",
-  "description": "Finish the quarterly analysis report",
-  "priority": "high",
-  "due_date": "2025-08-15 17:00:00",
-  "completed": true,
-  "completed_at": "2025-08-15 16:45:00",
-  "created_at": "2025-08-01 12:30:00"
-}
-```
+## CI/CD
 
-### Task Statistics
-```json
-{
-  "total_tasks": 10,
-  "completed_tasks": 6,
-  "pending_tasks": 4,
-  "overdue_tasks": 1,
-  "completion_rate": 60.0
-}
-```
+The project includes GitHub Actions workflows for:
+
+- **Continuous Integration** - Automated testing on push/PR
+- **Deployment** - Automated deployment to production
+
+### CI Pipeline
+- Python 3.10 and 3.11 compatibility testing
+- Code linting with flake8
+- Unit and integration tests
+- Security scanning
+- Docker image build and test
 
 ## Task Properties
 
@@ -169,193 +200,90 @@ curl http://localhost:5125/tasks/stats
 - **completed_at**: Timestamp when task was completed (auto-set)
 - **created_at**: Task creation timestamp (auto-set)
 
-## Priority Levels
+## Room Properties
 
-- **high**: Urgent tasks requiring immediate attention
-- **medium**: Standard priority tasks (default)
-- **low**: Tasks that can be completed when time permits
+- **code**: Unique 6-character room code (auto-generated)
+- **owner**: Username of room creator
+- **members**: List of usernames in the room
+- **created_at**: Room creation timestamp
+- **tasks**: Array of tasks in the room
 
-## Due Date Formats
+## Environment Variables
 
-The API accepts due dates in two formats:
-- `YYYY-MM-DD` (e.g., "2025-08-15") - Sets time to 00:00:00
-- `YYYY-MM-DD HH:MM:SS` (e.g., "2025-08-15 17:30:00") - Specific date and time
+- `FLASK_ENV` - Environment mode (development/production)
+- `PYTHONUNBUFFERED` - Python unbuffered output
+- `FLASK_APP` - Flask application entry point
 
-## Docker
+## Development
 
-### Enhanced Multi-Stage Docker Configuration
+### Prerequisites
+- Python 3.10 or 3.11
+- Docker (optional)
+- Git
 
-The project includes production-ready Docker configuration with:
-- **Multi-stage builds** for optimized images
-- **Health checks** for container monitoring
-- **Security hardening** with non-root user
-- **Production optimizations** with Gunicorn
-- **Multiple environments** (dev, prod, monitoring)
-
-### Quick Start
-
-#### Development
+### Installation
 ```bash
-# Start development environment
-docker-compose -f docker-compose.dev.yml up
+# Clone repository
+git clone https://github.com/AriGameS/TaskManagerAPI.git
+cd TaskManagerAPI
 
-# With database and cache
-docker-compose -f docker-compose.dev.yml --profile database --profile cache up
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests
+pytest
+
+# Start development server
+python app.py
 ```
 
-#### Production
+## Production Deployment
+
+The application uses Gunicorn as the production WSGI server:
+
 ```bash
-# Start production environment
-docker-compose -f docker-compose.prod.yml up -d
-
-# With monitoring and load balancer
-docker-compose -f docker-compose.prod.yml --profile monitoring --profile loadbalancer up -d
+gunicorn --bind 0.0.0.0:5125 --workers 4 app:app
 ```
-
-#### Manual Docker
-```bash
-# Build production image
-docker build -t task-manager-api:latest .
-
-# Run container
-docker run -p 5125:5125 task-manager-api:latest
-```
-
-### Docker Features
-
-- **Multi-stage builds** for smaller, more secure images
-- **Health checks** with `/health` endpoint monitoring
-- **Resource limits** and optimization
-- **Security hardening** with non-root user execution
-- **Production-ready** with Gunicorn WSGI server
-- **Monitoring integration** with Prometheus and Grafana
-- **Load balancing** with Traefik reverse proxy
-
-For detailed Docker configuration, see [Docker Guide](DOCKER_GUIDE.md).
 
 ## Error Handling
 
 The API returns appropriate HTTP status codes:
+
 - `200` - Success
 - `201` - Created
 - `400` - Bad Request (missing required fields, invalid data)
-- `404` - Not Found (task doesn't exist)
+- `404` - Not Found (room or task doesn't exist)
 - `500` - Internal Server Error
 
 Example error response:
 ```json
 {
-  "error": "Task not found"
+  "error": "room is required. Provide ?room=ROOM_CODE"
 }
 ```
 
-## Project Files
+## Security
 
-- `app.py` - Main Flask application with all endpoints
-- `requirements.txt` - Dependencies
-- `Dockerfile` - Container setup
-- `docker-compose.yml` - Easy container orchestration
-- `README.md` - This documentation
+- Non-root user in Docker container
+- Health checks for monitoring
+- CORS support for web clients
+- Input validation on all endpoints
 
-## CI/CD Pipeline
+## License
 
-This project uses GitHub Actions for continuous integration and deployment with a multi-branch workflow:
+This project is open source and available under the MIT License.
 
-### Workflows
+## Contributing
 
-- **Continuous Integration** - Runs on all branches with multi-Python version testing
-- **Pull Request Checks** - Validates code quality and test coverage for PRs
-- **Deploy to Production** - Automatically deploys main branch to production
-- **Develop Pipeline** - Deploys develop branch to staging environment
-- **Feature Pipeline** - Validates feature branches
-- **Hotfix Pipeline** - Handles emergency fixes with security scans
-- **Scheduled Maintenance** - Weekly security and dependency checks
-- **Release Pipeline** - Creates releases and deploys versioned releases
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests
+5. Submit a pull request
 
-### Branch Strategy
+## Support
 
-- `main` - Production-ready code (protected, requires reviews)
-- `develop` - Integration branch for features
-- `feature/*` - Feature development branches
-- `hotfix/*` - Emergency fixes for production
-
-### Quality Gates
-
-- All tests must pass (unit, integration, curl tests)
-- Code coverage ≥ 80%
-- Security scans must pass
-- Docker build must succeed
-- Code quality checks (flake8, black, isort)
-
-For detailed information, see [Branch Strategy Documentation](.github/BRANCH_STRATEGY.md).
-
-## Testing
-
-The project includes comprehensive testing with multiple approaches:
-
-### Test Types
-
-1. **Unit Tests** - Test individual functions and components
-2. **Integration Tests** - Test API endpoints as a running service
-3. **Curl Tests** - Simple command-line tests for basic functionality
-
-### Running Tests
-
-#### Install Test Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-#### Run All Tests
-```bash
-python run_tests.py
-```
-
-#### Run Specific Test Types
-```bash
-# Unit tests only
-python run_tests.py --type pytest
-
-# Integration tests only (requires running API)
-python run_tests.py --type curl
-
-# Verbose output
-python run_tests.py --verbose
-```
-
-#### Manual Testing with Curl
-```bash
-# Make sure API is running first
-python app.py
-
-# In another terminal, run curl tests
-bash tests/test_curl.sh
-```
-
-#### Test Coverage
-```bash
-# Run tests with coverage report
-python -m pytest --cov=app --cov-report=html
-
-# View coverage report
-open htmlcov/index.html
-```
-
-### Test Structure
-```
-tests/
-├── __init__.py
-├── conftest.py              # Test fixtures and configuration
-├── test_app.py              # Unit tests for Flask app
-├── test_api_integration.py  # Integration tests
-└── test_curl.sh            # Curl-based tests
-```
-
-## Development Notes
-
-- Tasks are stored in memory and will be lost when the application restarts
-- For production use, integrate with a database (PostgreSQL, MongoDB, etc.)
-- The API automatically tracks overdue tasks based on current time
-- Task IDs are sequential and auto-generated
-- Completion timestamps are automatically set when marking tasks complete
-- Comprehensive test suite ensures API reliability and functionality
+For issues and questions:
+- Check GitHub Issues
+- Review API documentation
+- Check application logs
