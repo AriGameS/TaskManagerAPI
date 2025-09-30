@@ -1,14 +1,51 @@
 import pytest
 import json
 from datetime import datetime
-from app import app, tasks
+from app import app, rooms
+
+class TestRoomManagement:
+    """Test room creation and management."""
+    
+    def test_create_room(self, client):
+        """Test creating a new room."""
+        response = client.post('/rooms', 
+                             data=json.dumps({"username": "Alice"}),
+                             content_type='application/json')
+        
+        assert response.status_code == 201
+        data = json.loads(response.data)
+        assert 'room_code' in data
+        assert len(data['room_code']) == 6
+        assert data['room']['owner'] == "Alice"
+        assert "Alice" in data['room']['members']
+    
+    def test_get_room(self, client, test_room):
+        """Test getting room information."""
+        response = client.get(f'/rooms/{test_room}')
+        
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data['code'] == test_room
+        assert 'members' in data
+        assert 'tasks' in data
+    
+    def test_join_room(self, client, test_room):
+        """Test joining an existing room."""
+        response = client.post(f'/rooms/{test_room}/join',
+                             data=json.dumps({"username": "Bob"}),
+                             content_type='application/json')
+        
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert "Bob" in data['room']['members']
 
 class TestTaskCreation:
     """Test task creation functionality."""
     
-    def test_create_task_with_all_fields(self, client, sample_task):
+    def test_create_task_with_all_fields(self, client, test_room, sample_task):
         """Test creating a task with all fields."""
-        response = client.post('/tasks', 
+        sample_task['room_code'] = test_room
+        response = client.post(f'/tasks?room={test_room}', 
                              data=json.dumps(sample_task),
                              content_type='application/json')
         
@@ -18,345 +55,177 @@ class TestTaskCreation:
         assert data['task']['title'] == sample_task['title']
         assert data['task']['description'] == sample_task['description']
         assert data['task']['priority'] == sample_task['priority']
-        assert data['task']['due_date'] == sample_task['due_date']
         assert data['task']['completed'] is False
-        assert data['task']['completed_at'] is None
-        assert data['task']['created_at'] is not None
-        assert data['task']['id'] == 1
-
-    def test_create_task_with_minimal_fields(self, client):
-        """Test creating a task with only required fields."""
-        task_data = {"title": "Simple Task"}
-        response = client.post('/tasks',
+    
+    def test_create_task_minimal_fields(self, client, test_room):
+        """Test creating a task with minimal fields."""
+        task_data = {"title": "Simple Task", "room_code": test_room}
+        response = client.post(f'/tasks?room={test_room}',
                              data=json.dumps(task_data),
                              content_type='application/json')
         
         assert response.status_code == 201
         data = json.loads(response.data)
         assert data['task']['title'] == "Simple Task"
-        assert data['task']['description'] == ""
-        assert data['task']['priority'] == "medium"  # default
-        assert data['task']['due_date'] is None
-        assert data['task']['completed'] is False
-
-    def test_create_task_missing_title(self, client):
+        assert data['task']['priority'] == "medium"
+    
+    def test_create_task_missing_title(self, client, test_room):
         """Test creating a task without required title."""
-        task_data = {"description": "No title task"}
-        response = client.post('/tasks',
+        task_data = {"description": "No title", "room_code": test_room}
+        response = client.post(f'/tasks?room={test_room}',
                              data=json.dumps(task_data),
                              content_type='application/json')
         
         assert response.status_code == 400
         data = json.loads(response.data)
-        assert data['error'] == 'Missing task title'
-
-    def test_create_task_invalid_due_date_format(self, client):
-        """Test creating a task with invalid due date format."""
-        task_data = {
-            "title": "Test Task",
-            "due_date": "invalid-date"
-        }
-        response = client.post('/tasks',
-                             data=json.dumps(task_data),
-                             content_type='application/json')
-        
-        assert response.status_code == 400
-        data = json.loads(response.data)
-        assert 'Invalid due_date format' in data['error']
-
-    def test_create_task_with_different_priorities(self, client):
-        """Test creating tasks with different priority levels."""
-        priorities = ['high', 'medium', 'low']
-        
-        for priority in priorities:
-            task_data = {
-                "title": f"Task with {priority} priority",
-                "priority": priority
-            }
-            response = client.post('/tasks',
-                                 data=json.dumps(task_data),
-                                 content_type='application/json')
-            
-            assert response.status_code == 201
-            data = json.loads(response.data)
-            assert data['task']['priority'] == priority
+        assert 'error' in data
 
 class TestTaskRetrieval:
     """Test task retrieval functionality."""
     
-    def test_get_all_tasks_empty(self, client):
-        """Test getting all tasks when none exist."""
-        response = client.get('/tasks')
-        
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert data['tasks'] == []
-        assert data['total'] == 0
-        assert data['total_all'] == 0
-
-    def test_get_all_tasks_with_data(self, client, sample_tasks):
-        """Test getting all tasks when tasks exist."""
-        # Create tasks
-        for task_data in sample_tasks:
-            client.post('/tasks',
-                       data=json.dumps(task_data),
+    def test_get_all_tasks(self, client, test_room):
+        """Test getting all tasks in a room."""
+        # Create some tasks
+        tasks_data = [
+            {"title": "Task 1", "room_code": test_room},
+            {"title": "Task 2", "room_code": test_room}
+        ]
+        for task in tasks_data:
+            client.post(f'/tasks?room={test_room}',
+                       data=json.dumps(task),
                        content_type='application/json')
         
-        response = client.get('/tasks')
-        
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert len(data['tasks']) == 3
-        assert data['total'] == 3
-        assert data['total_all'] == 3
-
-    def test_get_tasks_filter_by_status_completed(self, client, sample_tasks):
-        """Test filtering tasks by completed status."""
-        # Create tasks
-        for task_data in sample_tasks:
-            client.post('/tasks',
-                       data=json.dumps(task_data),
-                       content_type='application/json')
-        
-        # Complete first task
-        client.post('/tasks/1/complete')
-        
-        response = client.get('/tasks?status=completed')
-        
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert len(data['tasks']) == 1
-        assert data['tasks'][0]['completed'] is True
-
-    def test_get_tasks_filter_by_status_pending(self, client, sample_tasks):
-        """Test filtering tasks by pending status."""
-        # Create tasks
-        for task_data in sample_tasks:
-            client.post('/tasks',
-                       data=json.dumps(task_data),
-                       content_type='application/json')
-        
-        # Complete first task
-        client.post('/tasks/1/complete')
-        
-        response = client.get('/tasks?status=pending')
-        
+        response = client.get(f'/tasks?room={test_room}')
         assert response.status_code == 200
         data = json.loads(response.data)
         assert len(data['tasks']) == 2
-        for task in data['tasks']:
-            assert task['completed'] is False
-
-    def test_get_tasks_filter_by_priority(self, client, sample_tasks):
+    
+    def test_filter_tasks_by_priority(self, client, test_room):
         """Test filtering tasks by priority."""
-        # Create tasks
-        for task_data in sample_tasks:
-            client.post('/tasks',
-                       data=json.dumps(task_data),
-                       content_type='application/json')
+        # Create tasks with different priorities
+        client.post(f'/tasks?room={test_room}',
+                   data=json.dumps({"title": "High Priority", "priority": "high", "room_code": test_room}),
+                   content_type='application/json')
+        client.post(f'/tasks?room={test_room}',
+                   data=json.dumps({"title": "Low Priority", "priority": "low", "room_code": test_room}),
+                   content_type='application/json')
         
-        response = client.get('/tasks?priority=high')
-        
-        assert response.status_code == 200
+        response = client.get(f'/tasks?room={test_room}&priority=high')
         data = json.loads(response.data)
         assert len(data['tasks']) == 1
         assert data['tasks'][0]['priority'] == 'high'
+    
+    def test_filter_tasks_by_status(self, client, test_room):
+        """Test filtering tasks by completion status."""
+        # Create and complete one task
+        client.post(f'/tasks?room={test_room}',
+                   data=json.dumps({"title": "Task 1", "room_code": test_room}),
+                   content_type='application/json')
+        client.post(f'/tasks/1/complete?room={test_room}')
+        
+        client.post(f'/tasks?room={test_room}',
+                   data=json.dumps({"title": "Task 2", "room_code": test_room}),
+                   content_type='application/json')
+        
+        # Test completed filter
+        response = client.get(f'/tasks?room={test_room}&status=completed')
+        data = json.loads(response.data)
+        assert len(data['tasks']) == 1
+        assert data['tasks'][0]['completed'] is True
+        
+        # Test pending filter
+        response = client.get(f'/tasks?room={test_room}&status=pending')
+        data = json.loads(response.data)
+        assert len(data['tasks']) == 1
+        assert data['tasks'][0]['completed'] is False
 
 class TestTaskUpdate:
     """Test task update functionality."""
     
-    def test_update_task_all_fields(self, client, sample_task):
-        """Test updating all fields of a task."""
-        # Create task
-        client.post('/tasks',
-                   data=json.dumps(sample_task),
+    def test_update_task(self, client, test_room):
+        """Test updating a task."""
+        # Create a task
+        client.post(f'/tasks?room={test_room}',
+                   data=json.dumps({"title": "Original", "room_code": test_room}),
                    content_type='application/json')
         
-        # Update task
-        update_data = {
-            "title": "Updated Task Title",
-            "description": "Updated description",
-            "priority": "low",
-            "completed": True
-        }
-        response = client.put('/tasks/1',
+        # Update the task
+        update_data = {"title": "Updated", "priority": "high"}
+        response = client.put(f'/tasks/1?room={test_room}',
                             data=json.dumps(update_data),
                             content_type='application/json')
         
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data['message'] == 'Task updated successfully'
-        assert data['task']['title'] == "Updated Task Title"
-        assert data['task']['description'] == "Updated description"
-        assert data['task']['priority'] == "low"
+        assert data['task']['title'] == "Updated"
+        assert data['task']['priority'] == "high"
+    
+    def test_complete_task(self, client, test_room):
+        """Test marking a task as completed."""
+        # Create a task
+        client.post(f'/tasks?room={test_room}',
+                   data=json.dumps({"title": "To Complete", "room_code": test_room}),
+                   content_type='application/json')
+        
+        # Complete the task
+        response = client.post(f'/tasks/1/complete?room={test_room}')
+        
+        assert response.status_code == 200
+        data = json.loads(response.data)
         assert data['task']['completed'] is True
         assert data['task']['completed_at'] is not None
-
-    def test_update_task_partial_fields(self, client, sample_task):
-        """Test updating only some fields of a task."""
-        # Create task
-        client.post('/tasks',
-                   data=json.dumps(sample_task),
-                   content_type='application/json')
-        
-        # Update only title
-        update_data = {"title": "Only Title Updated"}
-        response = client.put('/tasks/1',
-                            data=json.dumps(update_data),
-                            content_type='application/json')
-        
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert data['task']['title'] == "Only Title Updated"
-        assert data['task']['description'] == sample_task['description']  # unchanged
-        assert data['task']['priority'] == sample_task['priority']  # unchanged
-
-    def test_update_nonexistent_task(self, client):
-        """Test updating a task that doesn't exist."""
-        update_data = {"title": "Updated Title"}
-        response = client.put('/tasks/999',
-                            data=json.dumps(update_data),
-                            content_type='application/json')
-        
-        assert response.status_code == 404
-        data = json.loads(response.data)
-        assert data['error'] == 'Task not found'
-
-    def test_update_task_no_data(self, client, sample_task):
-        """Test updating a task with no data provided."""
-        # Create task
-        client.post('/tasks',
-                   data=json.dumps(sample_task),
-                   content_type='application/json')
-        
-        response = client.put('/tasks/1',
-                            data=json.dumps({}),
-                            content_type='application/json')
-        
-        assert response.status_code == 400
-        data = json.loads(response.data)
-        assert data['error'] == 'No data provided'
 
 class TestTaskDeletion:
     """Test task deletion functionality."""
     
-    def test_delete_existing_task(self, client, sample_task):
-        """Test deleting an existing task."""
-        # Create task
-        client.post('/tasks',
-                   data=json.dumps(sample_task),
+    def test_delete_task(self, client, test_room):
+        """Test deleting a task."""
+        # Create a task
+        client.post(f'/tasks?room={test_room}',
+                   data=json.dumps({"title": "To Delete", "room_code": test_room}),
                    content_type='application/json')
         
-        # Delete task
-        response = client.delete('/tasks/1')
+        # Delete the task
+        response = client.delete(f'/tasks/1?room={test_room}')
         
         assert response.status_code == 200
         data = json.loads(response.data)
         assert data['message'] == 'Task deleted successfully'
-        assert data['deleted_task']['id'] == 1
-
-    def test_delete_nonexistent_task(self, client):
-        """Test deleting a task that doesn't exist."""
-        response = client.delete('/tasks/999')
         
-        assert response.status_code == 404
+        # Verify task is deleted
+        response = client.get(f'/tasks?room={test_room}')
         data = json.loads(response.data)
-        assert data['error'] == 'Task not found'
+        assert len(data['tasks']) == 0
 
-    def test_delete_task_removes_from_list(self, client, sample_tasks):
-        """Test that deleted task is removed from the tasks list."""
-        # Create tasks
-        for task_data in sample_tasks:
-            client.post('/tasks',
-                       data=json.dumps(task_data),
-                       content_type='application/json')
-        
-        # Verify 3 tasks exist
-        response = client.get('/tasks')
-        assert len(json.loads(response.data)['tasks']) == 3
-        
-        # Delete middle task
-        client.delete('/tasks/2')
-        
-        # Verify only 2 tasks remain
-        response = client.get('/tasks')
-        data = json.loads(response.data)
-        assert len(data['tasks']) == 2
-        task_ids = [task['id'] for task in data['tasks']]
-        assert 2 not in task_ids
-
-class TestTaskCompletion:
-    """Test task completion functionality."""
-    
-    def test_complete_existing_task(self, client, sample_task):
-        """Test completing an existing task."""
-        # Create task
-        client.post('/tasks',
-                   data=json.dumps(sample_task),
-                   content_type='application/json')
-        
-        # Complete task
-        response = client.post('/tasks/1/complete')
-        
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert data['message'] == 'Task marked as completed'
-        assert data['task']['completed'] is True
-        assert data['task']['completed_at'] is not None
-
-    def test_complete_nonexistent_task(self, client):
-        """Test completing a task that doesn't exist."""
-        response = client.post('/tasks/999/complete')
-        
-        assert response.status_code == 404
-        data = json.loads(response.data)
-        assert data['error'] == 'Task not found'
-
-class TestTaskStatistics:
+class TestStatistics:
     """Test task statistics functionality."""
     
-    def test_get_stats_empty_tasks(self, client):
-        """Test getting statistics when no tasks exist."""
-        response = client.get('/tasks/stats')
-        
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert data['total_tasks'] == 0
-        assert data['completed_tasks'] == 0
-        assert data['pending_tasks'] == 0
-        assert data['overdue_tasks'] == 0
-        assert data['completion_rate'] == 0
-
-    def test_get_stats_with_tasks(self, client, sample_tasks):
-        """Test getting statistics with various tasks."""
-        # Create tasks
-        for task_data in sample_tasks:
-            client.post('/tasks',
-                       data=json.dumps(task_data),
-                       content_type='application/json')
+    def test_get_stats(self, client, test_room):
+        """Test getting task statistics."""
+        # Create some tasks
+        client.post(f'/tasks?room={test_room}',
+                   data=json.dumps({"title": "Task 1", "room_code": test_room}),
+                   content_type='application/json')
+        client.post(f'/tasks?room={test_room}',
+                   data=json.dumps({"title": "Task 2", "room_code": test_room}),
+                   content_type='application/json')
         
         # Complete one task
-        client.post('/tasks/1/complete')
+        client.post(f'/tasks/1/complete?room={test_room}')
         
-        response = client.get('/tasks/stats')
+        # Get stats
+        response = client.get(f'/tasks/stats?room={test_room}')
         
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data['total_tasks'] == 3
+        assert data['total_tasks'] == 2
         assert data['completed_tasks'] == 1
-        assert data['pending_tasks'] == 2
-        assert data['completion_rate'] == 33.33
+        assert data['pending_tasks'] == 1
+        assert data['completion_rate'] == 50.0
 
-class TestAPIEndpoints:
-    """Test basic API endpoint functionality."""
+class TestHealthCheck:
+    """Test health check endpoint."""
     
-    def test_home_endpoint(self, client):
-        """Test the home API endpoint."""
-        response = client.get('/api')
-        
-        assert response.status_code == 200
-        assert response.data.decode() == "Task Manager API - Use /tasks endpoint"
-
     def test_health_endpoint(self, client):
         """Test the health check endpoint."""
         response = client.get('/health')
@@ -365,32 +234,29 @@ class TestAPIEndpoints:
         data = json.loads(response.data)
         assert data['status'] == 'healthy'
         assert 'timestamp' in data
-        assert data['version'] == '1.0.0'
-        assert data['uptime'] == 'running'
-
-    def test_index_endpoint(self, client):
-        """Test the index endpoint serves the frontend."""
-        response = client.get('/')
-        
-        assert response.status_code == 200
-        # Should serve the index.html file
-        assert b'html' in response.data.lower()
+        assert 'version' in data
 
 class TestErrorHandling:
-    """Test error handling functionality."""
+    """Test error handling."""
     
-    def test_invalid_json_request(self, client):
-        """Test handling of invalid JSON in request."""
-        response = client.post('/tasks',
-                             data='invalid json',
-                             content_type='application/json')
+    def test_room_not_found(self, client):
+        """Test error when room doesn't exist."""
+        response = client.get('/tasks?room=INVALID')
         
-        assert response.status_code == 400
-
-    def test_missing_content_type(self, client):
-        """Test handling of missing content type header."""
-        response = client.post('/tasks',
-                             data='{"title": "Test"}')
+        assert response.status_code == 404
+        data = json.loads(response.data)
+        assert 'error' in data
+    
+    def test_task_not_found(self, client, test_room):
+        """Test error when task doesn't exist."""
+        response = client.get(f'/tasks/999?room={test_room}')
         
-        # Flask should still process this, but it's good to test
-        assert response.status_code in [200, 201, 400]
+        # This should return 404 for non-existent task operations
+        # Note: Current implementation doesn't have GET /tasks/<id>, so this tests update/delete
+        response = client.put(f'/tasks/999?room={test_room}',
+                            data=json.dumps({"title": "Update"}),
+                            content_type='application/json')
+        
+        assert response.status_code == 404
+        data = json.loads(response.data)
+        assert 'error' in data

@@ -1,6 +1,6 @@
 import pytest
 import json
-from app import app, tasks
+from app import app, rooms
 
 @pytest.fixture
 def client():
@@ -42,9 +42,15 @@ def sample_tasks():
         }
     ]
 
+@pytest.fixture
+def test_room(client):
+    """Create a test room for testing."""
+    response = client.post('/rooms', json={"username": "testuser"})
+    return response.json['room_code']
+
 @pytest.fixture(autouse=True)
-def reset_tasks():
-    """Reset the tasks list before each test."""
-    tasks.clear()
+def reset_rooms():
+    """Reset the rooms dict before each test."""
+    rooms.clear()
     yield
-    tasks.clear()
+    rooms.clear()
