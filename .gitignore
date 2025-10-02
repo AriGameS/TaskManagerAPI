@@ -22,3 +22,13 @@ node_modules/
 frontend/node_modules/
 dist/
 build/
+
+# Presentation Guides (Local Only - Not pushed to GitHub)
+guides/
+
+# Terraform files
+terraform/environments/*/.terraform/
+terraform/environments/*/.terraform.lock.hcl
+terraform/environments/*/terraform.tfstate
+terraform/environments/*/terraform.tfstate.backup
+terraform/environments/*/terraform.tfvars.backup

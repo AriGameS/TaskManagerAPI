@@ -1,13 +1,9 @@
 # Development Environment Outputs
 
+# VPC Outputs
 output "vpc_id" {
   description = "ID of the VPC"
   value       = module.vpc.vpc_id
-}
-
-output "vpc_cidr_block" {
-  description = "CIDR block of the VPC"
-  value       = module.vpc.vpc_cidr_block
 }
 
 output "public_subnet_ids" {
@@ -20,6 +16,7 @@ output "private_subnet_ids" {
   value       = module.vpc.private_subnet_ids
 }
 
+# ALB Outputs
 output "alb_dns_name" {
   description = "DNS name of the Application Load Balancer"
   value       = module.alb.alb_dns_name
@@ -30,77 +27,57 @@ output "alb_zone_id" {
   value       = module.alb.alb_zone_id
 }
 
-output "alb_arn" {
-  description = "ARN of the Application Load Balancer"
-  value       = module.alb.alb_arn
+output "alb_url" {
+  description = "URL of the Application Load Balancer"
+  value       = "http://${module.alb.alb_dns_name}"
 }
 
-output "target_group_arn" {
-  description = "ARN of the target group"
-  value       = module.alb.target_group_arn
-}
-
-output "ecs_cluster_id" {
-  description = "ID of the ECS cluster"
-  value       = module.ecs.cluster_id
-}
-
+# ECS Outputs
 output "ecs_cluster_name" {
   description = "Name of the ECS cluster"
-  value       = module.ecs.cluster_name
+  value       = module.ecs.ecs_cluster_name
 }
 
 output "ecs_service_name" {
   description = "Name of the ECS service"
-  value       = module.ecs.service_name
+  value       = module.ecs.ecs_service_name
 }
 
-output "ecs_task_definition_arn" {
-  description = "ARN of the task definition"
-  value       = module.ecs.task_definition_arn
-}
-
-output "ecs_log_group_name" {
-  description = "Name of the ECS CloudWatch log group"
-  value       = module.ecs.log_group_name
-}
-
-output "rds_endpoint" {
-  description = "Endpoint of the RDS instance"
-  value       = var.enable_rds ? module.rds[0].db_instance_endpoint : null
-}
-
-output "rds_address" {
-  description = "Address of the RDS instance"
-  value       = var.enable_rds ? module.rds[0].db_instance_address : null
-}
-
-output "rds_port" {
-  description = "Port of the RDS instance"
-  value       = var.enable_rds ? module.rds[0].db_instance_port : null
-}
-
-output "rds_password_secret_arn" {
-  description = "ARN of the secret containing the database password"
-  value       = var.enable_rds ? module.rds[0].db_instance_password_secret_arn : null
-}
-
+# Application URL
 output "application_url" {
-  description = "URL of the application"
-  value       = var.domain_name != "" ? "https://${var.domain_name}" : "http://${module.alb.alb_dns_name}"
+  description = "URL to access the application"
+  value       = "http://${module.alb.alb_dns_name}"
 }
 
+output "health_check_url" {
+  description = "URL to check application health"
+  value       = "http://${module.alb.alb_dns_name}/health"
+}
+
+# CloudWatch Dashboard
 output "cloudwatch_dashboard_url" {
-  description = "URL of the CloudWatch dashboard"
+  description = "URL to the CloudWatch dashboard"
   value       = "https://${data.aws_region.current.name}.console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.name}#dashboards:name=${aws_cloudwatch_dashboard.main.dashboard_name}"
 }
 
+# Region and Account Info
 output "aws_region" {
   description = "AWS region"
   value       = data.aws_region.current.name
 }
 
 output "aws_account_id" {
-  description = "AWS account ID"
+  description = "AWS Account ID"
   value       = data.aws_caller_identity.current.account_id
+}
+
+# RDS Outputs (if enabled)
+output "rds_endpoint" {
+  description = "RDS instance endpoint"
+  value       = var.enable_rds ? module.rds[0].db_endpoint : null
+}
+
+output "rds_port" {
+  description = "RDS instance port"
+  value       = var.enable_rds ? module.rds[0].db_port : null
 }

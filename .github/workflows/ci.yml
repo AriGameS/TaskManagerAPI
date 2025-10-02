@@ -133,6 +133,7 @@ jobs:
         push: false
         load: true
         tags: task-manager-api:latest
+        platforms: linux/amd64
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -140,7 +141,7 @@ jobs:
       run: |
         docker run -d -p 5125:5125 --name test-container task-manager-api:latest
         sleep 10
-        curl -f http://localhost:5125/api || exit 1
+        curl -f http://localhost:5125/health || exit 1
         docker stop test-container
         docker rm test-container
 

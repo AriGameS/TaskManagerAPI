@@ -1,0 +1,180 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Allow manual triggers
+
+env:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_IMAGE: aribdev/taskmanager
+  AWS_REGION: us-west-2
+  TERRAFORM_DIR: terraform/environments/dev
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=v{{date 'YYYYMMDD'}}-{{sha}}
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILDPLATFORM=${{ runner.arch }}
+
+    - name: Test pushed image
+      run: |
+        docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:${{ github.ref_name }}-${{ github.sha }}
+        docker run -d -p 5125:5125 --name test-pushed ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:${{ github.ref_name }}-${{ github.sha }}
+        sleep 10
+        curl -f http://localhost:5125/health || exit 1
+        docker stop test-pushed
+        docker rm test-pushed
+
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production # This will require manual approval
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.0
+
+    - name: Terraform Format Check
+      run: terraform fmt -check -recursive
+      working-directory: ${{ env.TERRAFORM_DIR }}
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ${{ env.TERRAFORM_DIR }}
+
+    - name: Terraform Validate
+      run: terraform validate
+      working-directory: ${{ env.TERRAFORM_DIR }}
+
+    - name: Update container image in Terraform
+      run: |
+        # Update the terraform.tfvars with the new image tag
+        NEW_TAG="${{ github.ref_name }}-${{ github.sha }}"
+        sed -i "s|container_image = \".*\"|container_image = \"${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:$NEW_TAG\"|" terraform.tfvars
+        echo "Updated container_image to: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:$NEW_TAG"
+      working-directory: ${{ env.TERRAFORM_DIR }}
+
+    - name: Terraform Plan
+      run: terraform plan -out=tfplan
+      working-directory: ${{ env.TERRAFORM_DIR }}
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve tfplan
+      working-directory: ${{ env.TERRAFORM_DIR }}
+
+    - name: Get Application URL
+      run: |
+        ALB_URL=$(terraform output -raw alb_url)
+        echo "Application deployed at: $ALB_URL"
+        echo "ALB_URL=$ALB_URL" >> $GITHUB_ENV
+        
+        # Wait for deployment to be ready
+        echo "Waiting for application to be ready..."
+        for i in {1..30}; do
+          if curl -f "$ALB_URL/health" 2>/dev/null; then
+            echo "✅ Application is healthy and ready!"
+            break
+          fi
+          echo "Attempt $i: Application not ready yet, waiting..."
+          sleep 10
+        done
+
+    - name: Run Health Check
+      run: |
+        curl -f $ALB_URL/health
+        echo "✅ Health check passed!"
+
+    - name: Test Application Endpoints
+      run: |
+        echo "Testing main endpoint..."
+        curl -f $ALB_URL/
+        echo "✅ Main endpoint working!"
+        
+        echo "Testing API endpoints..."
+        curl -f $ALB_URL/tasks
+        echo "✅ API endpoints working!"
+
+  notify-deployment:
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-infrastructure]
+    if: always()
+    
+    steps:
+    - name: Deployment Success Notification
+      if: ${{ needs.deploy-infrastructure.result == 'success' }}
+      run: |
+        echo "🚀 Deployment successful!"
+        echo "📦 Image: ${{ needs.build-and-push.outputs.image-tag }}"
+        echo "🌐 Application URL: ${{ env.ALB_URL }}"
+        echo "✅ Your Flask Task Manager is now live!"
+
+    - name: Deployment Failure Notification
+      if: ${{ needs.deploy-infrastructure.result == 'failure' }}
+      run: |
+        echo "❌ Deployment failed!"
+        echo "Please check the logs and fix any issues."
+        exit 1
+
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-infrastructure]
+    if: always() && github.ref != 'refs/heads/main'
+    
+    steps:
+    - name: Cleanup Docker images (for non-main branches)
+      run: |
+        echo "Cleaning up Docker images for feature branch..."
+        # Add cleanup logic here if needed

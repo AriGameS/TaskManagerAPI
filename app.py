@@ -99,20 +99,34 @@ def get_room(room_code):
         return err
     return jsonify(room)
 
+# Existing route: still works with /rooms/<room_code>/join
 @app.route('/rooms/<room_code>/join', methods=['POST'])
 def join_room(room_code):
-    """
-    Join a room.
-    Body: { "username": "Bob" }
-    """
-    room, err = require_room(room_code)
-    if err:
-        return err
-
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
     if not username:
         return jsonify({"error": "username is required"}), 400
+
+    if username not in rooms[room_code]['members']:
+        rooms[room_code]['members'].append(username)
+    return jsonify({"message": "Joined room", "room": rooms[room_code]})
+
+
+# New shortcut route: allows POST /rooms/join with body {room_code, username}
+@app.route('/rooms/join', methods=['POST'])
+def join_room_short():
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    room_code = (data.get('room_code') or request.args.get('room') or '').strip()
+
+    if not username:
+        return jsonify({"error": "username is required"}), 400
+    if not room_code:
+        return jsonify({"error": "room_code is required"}), 400
+
+    room, err = require_room(room_code)
+    if err:
+        return err
 
     if username not in room['members']:
         room['members'].append(username)
@@ -298,6 +312,7 @@ if __name__ == '__main__':
     print("   POST /rooms               - Create new room")
     print("   GET  /rooms/<code>        - Get room info")
     print("   POST /rooms/<code>/join   - Join room")
+    print("   POST /rooms/join          - Join room (shortcut)")
     print("   GET  /tasks               - Get all tasks (with filtering)")
     print("   POST /tasks              - Create new task")
     print("   PUT  /tasks/<id>         - Update specific task")

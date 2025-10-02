@@ -189,6 +189,14 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
   }
 }
 
+# ALB Access Logs Configuration
+resource "aws_lb_target_group_attachment" "access_logs" {
+  count = var.enable_access_logs ? 1 : 0
+
+  target_group_arn = aws_lb_target_group.app.arn
+  target_id        = "dummy"
+  port             = var.app_port
+}
 
 # CloudWatch Log Group for ALB access logs
 resource "aws_cloudwatch_log_group" "alb" {
