@@ -133,7 +133,17 @@ async function loadRoomInfo() {
   }
 
   try {
-    const room = await fetchJSON(`/rooms/${encodeURIComponent(ROOM)}`);
+    // Use direct fetch instead of fetchJSON to avoid automatic error display
+    const res = await fetch(`/rooms/${encodeURIComponent(ROOM)}`);
+    let room = null;
+    try { 
+      room = await res.json(); 
+    } catch {}
+    
+    if (!res.ok) {
+      throw new Error(room?.error || res.statusText || 'Room not found');
+    }
+
     if (codeEl) codeEl.textContent = `Room: ${room.code || ROOM}`;
 
     if (copyBtn) {
@@ -170,8 +180,14 @@ async function loadRoomInfo() {
           .join('');
       }
     }
+    
+    // Clear any previous errors when room loads successfully
+    showError('');
   } catch (err) {
+    console.error('Failed to load room:', err);
+    if (codeEl) codeEl.textContent = `Room: ${ROOM} (not found)`;
     if (listEl) listEl.innerHTML = `<li>${escapeHTML(err.message || 'Failed to load room')}</li>`;
+    showError(`Room "${ROOM}" not found. Please check the room code or create a new room.`);
   }
 }
 
