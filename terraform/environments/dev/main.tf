@@ -114,25 +114,25 @@ module "ecs" {
   environment_variables = var.enable_rds ? concat(var.environment_variables, [
     {
       name  = "DB_HOST"
-      value = module.rds.db_instance_address
+      value = module.rds[0].db_instance_address
     },
     {
       name  = "DB_NAME"
-      value = module.rds.db_instance_name
+      value = module.rds[0].db_instance_name
     },
     {
       name  = "DB_USER"
-      value = module.rds.db_instance_username
+      value = module.rds[0].db_instance_username
     },
     {
       name  = "DB_PORT"
-      value = tostring(module.rds.db_instance_port)
+      value = tostring(module.rds[0].db_instance_port)
     }
   ]) : var.environment_variables
   secrets = var.enable_rds ? [
     {
       name      = "DB_PASSWORD"
-      valueFrom = module.rds.db_instance_password_secret_arn
+      valueFrom = module.rds[0].db_instance_password_secret_arn
     }
   ] : []
   enable_container_insights = var.enable_container_insights
