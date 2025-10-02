@@ -111,7 +111,30 @@ module "ecs" {
   ecs_task_execution_role_arn       = module.security.ecs_task_execution_role_arn
   ecs_task_role_arn                 = module.security.ecs_task_role_arn
   target_group_arn                  = module.alb.target_group_arn
-  environment_variables             = var.environment_variables
+  environment_variables = var.enable_rds ? concat(var.environment_variables, [
+    {
+      name  = "DB_HOST"
+      value = module.rds.db_instance_address
+    },
+    {
+      name  = "DB_NAME"
+      value = module.rds.db_instance_name
+    },
+    {
+      name  = "DB_USER"
+      value = module.rds.db_instance_username
+    },
+    {
+      name  = "DB_PORT"
+      value = tostring(module.rds.db_instance_port)
+    }
+  ]) : var.environment_variables
+  secrets = var.enable_rds ? [
+    {
+      name      = "DB_PASSWORD"
+      valueFrom = module.rds.db_instance_password_secret_arn
+    }
+  ] : []
   enable_container_insights         = var.enable_container_insights
   log_retention_days                = var.log_retention_days
   enable_autoscaling                = var.enable_autoscaling
