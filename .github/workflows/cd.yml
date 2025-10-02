@@ -102,7 +102,7 @@ jobs:
     - name: Update container image in Terraform
       run: |
         # Update the terraform.tfvars with the new image tag
-        NEW_TAG="${{ github.ref_name }}-${{ github.sha }}"
+        NEW_TAG="latest"
         sed -i "s|container_image = \".*\"|container_image = \"${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:$NEW_TAG\"|" terraform.tfvars
         echo "Updated container_image to: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:$NEW_TAG"
       working-directory: ${{ env.TERRAFORM_DIR }}
