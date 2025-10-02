@@ -74,10 +74,10 @@ output "aws_account_id" {
 # RDS Outputs (if enabled)
 output "rds_endpoint" {
   description = "RDS instance endpoint"
-  value       = var.enable_rds ? module.rds[0].db_endpoint : null
+  value       = var.enable_rds ? module.rds[0].db_instance_endpoint : null
 }
 
 output "rds_port" {
   description = "RDS instance port"
-  value       = var.enable_rds ? module.rds[0].db_port : null
+  value       = var.enable_rds ? module.rds[0].db_instance_port : null
 }
