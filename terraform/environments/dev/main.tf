@@ -52,14 +52,14 @@ locals {
 module "vpc" {
   source = "../../modules/vpc"
 
-  project_name           = var.project_name
-  environment           = var.environment
-  vpc_cidr              = var.vpc_cidr
-  public_subnet_cidrs   = var.public_subnet_cidrs
-  private_subnet_cidrs  = var.private_subnet_cidrs
-  enable_nat_gateway    = true
-  enable_dns_hostnames  = true
-  enable_dns_support    = true
+  project_name         = var.project_name
+  environment          = var.environment
+  vpc_cidr             = var.vpc_cidr
+  public_subnet_cidrs  = var.public_subnet_cidrs
+  private_subnet_cidrs = var.private_subnet_cidrs
+  enable_nat_gateway   = true
+  enable_dns_hostnames = true
+  enable_dns_support   = true
 
   tags = local.common_tags
 }
@@ -68,11 +68,11 @@ module "vpc" {
 module "security" {
   source = "../../modules/security"
 
-  project_name           = var.project_name
-  environment            = var.environment
-  vpc_id                 = module.vpc.vpc_id
-  private_subnet_cidrs   = var.private_subnet_cidrs
-  app_port               = var.app_port
+  project_name         = var.project_name
+  environment          = var.environment
+  vpc_id               = module.vpc.vpc_id
+  private_subnet_cidrs = var.private_subnet_cidrs
+  app_port             = var.app_port
 
   tags = local.common_tags
 }
@@ -81,16 +81,16 @@ module "security" {
 module "alb" {
   source = "../../modules/alb"
 
-  project_name              = var.project_name
-  environment              = var.environment
-  vpc_id                   = module.vpc.vpc_id
-  public_subnet_ids        = module.vpc.public_subnet_ids
-  alb_security_group_id    = module.security.alb_security_group_id
-  app_port                 = var.app_port
-  certificate_arn          = var.certificate_arn
+  project_name               = var.project_name
+  environment                = var.environment
+  vpc_id                     = module.vpc.vpc_id
+  public_subnet_ids          = module.vpc.public_subnet_ids
+  alb_security_group_id      = module.security.alb_security_group_id
+  app_port                   = var.app_port
+  certificate_arn            = var.certificate_arn
   enable_deletion_protection = var.enable_deletion_protection
-  enable_access_logs       = var.enable_access_logs
-  log_retention_days       = var.log_retention_days
+  enable_access_logs         = var.enable_access_logs
+  log_retention_days         = var.log_retention_days
 
   tags = local.common_tags
 }
@@ -99,18 +99,18 @@ module "alb" {
 module "ecs" {
   source = "../../modules/ecs"
 
-  project_name                      = var.project_name
-  environment                       = var.environment
-  container_image                   = var.container_image
-  app_port                          = var.app_port
-  cpu                               = var.ecs_cpu
-  memory                            = var.ecs_memory
-  desired_count                     = var.ecs_desired_count
-  private_subnet_ids                = module.vpc.private_subnet_ids
-  ecs_tasks_security_group_id       = module.security.ecs_tasks_security_group_id
-  ecs_task_execution_role_arn       = module.security.ecs_task_execution_role_arn
-  ecs_task_role_arn                 = module.security.ecs_task_role_arn
-  target_group_arn                  = module.alb.target_group_arn
+  project_name                = var.project_name
+  environment                 = var.environment
+  container_image             = var.container_image
+  app_port                    = var.app_port
+  cpu                         = var.ecs_cpu
+  memory                      = var.ecs_memory
+  desired_count               = var.ecs_desired_count
+  private_subnet_ids          = module.vpc.private_subnet_ids
+  ecs_tasks_security_group_id = module.security.ecs_tasks_security_group_id
+  ecs_task_execution_role_arn = module.security.ecs_task_execution_role_arn
+  ecs_task_role_arn           = module.security.ecs_task_role_arn
+  target_group_arn            = module.alb.target_group_arn
   environment_variables = var.enable_rds ? concat(var.environment_variables, [
     {
       name  = "DB_HOST"
@@ -135,11 +135,11 @@ module "ecs" {
       valueFrom = module.rds.db_instance_password_secret_arn
     }
   ] : []
-  enable_container_insights         = var.enable_container_insights
-  log_retention_days                = var.log_retention_days
-  enable_autoscaling                = var.enable_autoscaling
-  min_capacity                      = var.ecs_min_capacity
-  max_capacity                      = var.ecs_max_capacity
+  enable_container_insights = var.enable_container_insights
+  log_retention_days        = var.log_retention_days
+  enable_autoscaling        = var.enable_autoscaling
+  min_capacity              = var.ecs_min_capacity
+  max_capacity              = var.ecs_max_capacity
 
   tags = local.common_tags
 }
@@ -147,21 +147,21 @@ module "ecs" {
 # RDS Module (Optional for dev) - FIXED: Using correct variable names
 module "rds" {
   count = var.enable_rds ? 1 : 0
-  
+
   source = "../../modules/rds"
 
-  project_name                    = var.project_name
-  environment                    = var.environment
-  private_subnet_ids             = module.vpc.private_subnet_ids
-  rds_security_group_id          = module.security.rds_security_group_id
-  db_name                        = var.db_name
-  db_username                    = var.db_username
-  instance_class                 = var.db_instance_class
-  allocated_storage              = var.db_allocated_storage
-  backup_retention_period        = var.db_backup_retention_period
-  multi_az                       = var.db_multi_az
-  deletion_protection            = var.db_deletion_protection
-  skip_final_snapshot            = var.db_skip_final_snapshot
+  project_name            = var.project_name
+  environment             = var.environment
+  private_subnet_ids      = module.vpc.private_subnet_ids
+  rds_security_group_id   = module.security.rds_security_group_id
+  db_name                 = var.db_name
+  db_username             = var.db_username
+  instance_class          = var.db_instance_class
+  allocated_storage       = var.db_allocated_storage
+  backup_retention_period = var.db_backup_retention_period
+  multi_az                = var.db_multi_az
+  deletion_protection     = var.db_deletion_protection
+  skip_final_snapshot     = var.db_skip_final_snapshot
 
   tags = local.common_tags
 }
