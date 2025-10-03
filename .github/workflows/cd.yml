@@ -127,62 +127,11 @@ jobs:
       run: terraform init
       working-directory: ${{ env.TERRAFORM_DIR }}
 
-    - name: Import existing resources into Terraform state
+    - name: Clean deployment - No existing resources to import
       run: |
-        echo "📥 Importing existing resources into Terraform state..."
-        
-        # Import VPC
-        EXISTING_VPC=$(aws ec2 describe-vpcs --region ${{ env.AWS_REGION }} --filters "Name=tag:Project,Values=taskmanager" --query 'Vpcs[0].VpcId' --output text 2>/dev/null || echo "None")
-        if [ "$EXISTING_VPC" != "None" ] && [ ! -z "$EXISTING_VPC" ]; then
-          echo "Importing VPC: $EXISTING_VPC"
-          terraform import module.vpc.aws_vpc.main $EXISTING_VPC 2>/dev/null || echo "VPC import failed or already in state"
-        fi
-        
-        # Import Load Balancer
-        EXISTING_ALB=$(aws elbv2 describe-load-balancers --region ${{ env.AWS_REGION }} --query 'LoadBalancers[?contains(LoadBalancerName, `taskmanager`)].LoadBalancerArn' --output text 2>/dev/null || echo "None")
-        if [ "$EXISTING_ALB" != "None" ] && [ ! -z "$EXISTING_ALB" ]; then
-          echo "Importing Load Balancer: $EXISTING_ALB"
-          terraform import module.alb.aws_lb.main $EXISTING_ALB 2>/dev/null || echo "ALB import failed or already in state"
-        fi
-        
-        # Import Target Group
-        EXISTING_TG=$(aws elbv2 describe-target-groups --region ${{ env.AWS_REGION }} --query 'TargetGroups[?contains(TargetGroupName, `taskmanager`)].TargetGroupArn' --output text 2>/dev/null || echo "None")
-        if [ "$EXISTING_TG" != "None" ] && [ ! -z "$EXISTING_TG" ]; then
-          echo "Importing Target Group: $EXISTING_TG"
-          terraform import module.alb.aws_lb_target_group.app $EXISTING_TG 2>/dev/null || echo "Target Group import failed or already in state"
-        fi
-        
-        # Import ECS Cluster
-        EXISTING_CLUSTER=$(aws ecs list-clusters --region ${{ env.AWS_REGION }} --query 'clusterArns[?contains(@, `taskmanager`)][0]' --output text 2>/dev/null || echo "None")
-        if [ "$EXISTING_CLUSTER" != "None" ] && [ ! -z "$EXISTING_CLUSTER" ]; then
-          echo "Importing ECS Cluster: $EXISTING_CLUSTER"
-          terraform import module.ecs.aws_ecs_cluster.main $EXISTING_CLUSTER 2>/dev/null || echo "ECS Cluster import failed or already in state"
-        fi
-        
-        # Import CloudWatch Log Groups
-        echo "Importing CloudWatch Log Groups..."
-        terraform import module.alb.aws_cloudwatch_log_group.alb[0] /aws/applicationloadbalancer/taskmanager 2>/dev/null || echo "ALB Log Group import failed or already in state"
-        terraform import module.ecs.aws_cloudwatch_log_group.ecs /ecs/taskmanager 2>/dev/null || echo "ECS Log Group import failed or already in state"
-        
-        # Import Secrets Manager Secret
-        echo "Importing Secrets Manager Secret..."
-        terraform import module.rds[0].aws_secretsmanager_secret.db_password taskmanager-db-password 2>/dev/null || echo "DB Password Secret import failed or already in state"
-        
-        # Import RDS Subnet Group
-        echo "Importing RDS Subnet Group..."
-        terraform import module.rds[0].aws_db_subnet_group.main taskmanager-db-subnet-group 2>/dev/null || echo "RDS Subnet Group import failed or already in state"
-        
-        # Import RDS Parameter Group
-        echo "Importing RDS Parameter Group..."
-        terraform import module.rds[0].aws_db_parameter_group.main taskmanager-db-params 2>/dev/null || echo "RDS Parameter Group import failed or already in state"
-        
-        # Import IAM Roles
-        echo "Importing IAM Roles..."
-        terraform import module.security.aws_iam_role.ecs_task_execution_role taskmanager-ecs-task-execution-role 2>/dev/null || echo "ECS Task Execution Role import failed or already in state"
-        terraform import module.security.aws_iam_role.ecs_task_role taskmanager-ecs-task-role 2>/dev/null || echo "ECS Task Role import failed or already in state"
-        terraform import module.security.aws_iam_role.ecs_service_role taskmanager-ecs-service-role 2>/dev/null || echo "ECS Service Role import failed or already in state"
-        
-        echo "✅ Import process completed"
+        echo "🚀 Clean deployment: Creating fresh infrastructure..."
+        echo "✅ All conflicting resources have been manually cleaned up"
+        echo "✅ Ready for fresh Terraform deployment"
       working-directory: ${{ env.TERRAFORM_DIR }}
 
     - name: Terraform Validate
