@@ -73,26 +73,26 @@ resource "aws_subnet" "private" {
   }
 }
 
-# Elastic IPs for NAT Gateways
+# Elastic IPs for NAT Gateways - Only create if NAT gateway is enabled
 resource "aws_eip" "nat" {
-  count = length(aws_subnet.public)
+  count = var.enable_nat_gateway ? 1 : 0  # Only create 1 EIP to save costs
 
   domain = "vpc"
   depends_on = [aws_internet_gateway.main]
 
   tags = {
-    Name        = "${var.project_name}-nat-eip-${count.index + 1}"
+    Name        = "${var.project_name}-nat-eip"
     Environment = var.environment
     Project     = var.project_name
   }
 }
 
-# NAT Gateways
+# NAT Gateways - Only create if enabled
 resource "aws_nat_gateway" "main" {
-  count = length(aws_subnet.public)
+  count = var.enable_nat_gateway ? 1 : 0
 
-  allocation_id = aws_eip.nat[count.index].id
-  subnet_id     = aws_subnet.public[count.index].id
+  allocation_id = aws_eip.nat[0].id
+  subnet_id     = aws_subnet.public[0].id
 
   tags = {
     Name        = "${var.project_name}-nat-gateway-${count.index + 1}"
@@ -125,9 +125,13 @@ resource "aws_route_table" "private" {
 
   vpc_id = aws_vpc.main.id
 
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main[count.index].id
+  # Only add NAT gateway route if NAT gateway is enabled
+  dynamic "route" {
+    for_each = var.enable_nat_gateway ? [1] : []
+    content {
+      cidr_block     = "0.0.0.0/0"
+      nat_gateway_id = aws_nat_gateway.main[0].id
+    }
   }
 
   tags = {

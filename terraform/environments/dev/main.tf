@@ -57,7 +57,7 @@ module "vpc" {
   vpc_cidr             = var.vpc_cidr
   public_subnet_cidrs  = var.public_subnet_cidrs
   private_subnet_cidrs = var.private_subnet_cidrs
-  enable_nat_gateway   = true
+  enable_nat_gateway   = false
   enable_dns_hostnames = true
   enable_dns_support   = true
 
