@@ -81,6 +81,43 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
+    - name: Cleanup existing TaskManager resources
+      run: |
+        echo "🧹 Cleaning up existing TaskManager resources..."
+        
+        # Check for existing Load Balancers
+        ALBS=$(aws elbv2 describe-load-balancers --region ${{ env.AWS_REGION }} --query 'LoadBalancers[?contains(LoadBalancerName, `taskmanager`)].LoadBalancerArn' --output text 2>/dev/null || echo "")
+        if [ ! -z "$ALBS" ] && [ "$ALBS" != "None" ]; then
+          echo "Found existing Load Balancers: $ALBS"
+          for alb in $ALBS; do
+            echo "Deleting Load Balancer: $alb"
+            aws elbv2 delete-load-balancer --load-balancer-arn $alb --region ${{ env.AWS_REGION }} 2>/dev/null || echo "Failed to delete $alb"
+          done
+        fi
+        
+        # Check for existing ECS Clusters
+        ECS_CLUSTERS=$(aws ecs list-clusters --region ${{ env.AWS_REGION }} --query 'clusterArns[?contains(@, `taskmanager`)]' --output text 2>/dev/null || echo "")
+        if [ ! -z "$ECS_CLUSTERS" ] && [ "$ECS_CLUSTERS" != "None" ]; then
+          echo "Found existing ECS Clusters: $ECS_CLUSTERS"
+          for cluster in $ECS_CLUSTERS; do
+            echo "Deleting ECS Cluster: $cluster"
+            aws ecs delete-cluster --cluster $cluster --region ${{ env.AWS_REGION }} 2>/dev/null || echo "Failed to delete $cluster"
+          done
+        fi
+        
+        # Check for existing VPCs with TaskManager tags
+        VPCS=$(aws ec2 describe-vpcs --region ${{ env.AWS_REGION }} --filters "Name=tag:Project,Values=taskmanager" --query 'Vpcs[*].VpcId' --output text 2>/dev/null || echo "")
+        if [ ! -z "$VPCS" ] && [ "$VPCS" != "None" ]; then
+          echo "Found existing TaskManager VPCs: $VPCS"
+          echo "⚠️  VPCs will be managed by Terraform - skipping manual deletion"
+        fi
+        
+        # Wait a bit for resources to be deleted
+        echo "⏳ Waiting for resources to be deleted..."
+        sleep 30
+        
+        echo "✅ Cleanup completed"
+
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
@@ -92,6 +129,26 @@ jobs:
 
     - name: Terraform Init
       run: terraform init
+      working-directory: ${{ env.TERRAFORM_DIR }}
+
+    - name: Import existing VPCs if they exist
+      run: |
+        echo "🔍 Checking for existing VPCs to import..."
+        
+        # Get existing VPC ID
+        EXISTING_VPC=$(aws ec2 describe-vpcs --region ${{ env.AWS_REGION }} --filters "Name=tag:Project,Values=taskmanager" --query 'Vpcs[0].VpcId' --output text 2>/dev/null || echo "None")
+        
+        if [ "$EXISTING_VPC" != "None" ] && [ ! -z "$EXISTING_VPC" ]; then
+          echo "Found existing VPC: $EXISTING_VPC"
+          echo "Attempting to import into Terraform state..."
+          
+          # Try to import the VPC
+          terraform import module.vpc.aws_vpc.main $EXISTING_VPC 2>/dev/null || echo "VPC import failed or already in state"
+          
+          echo "✅ VPC import attempted"
+        else
+          echo "No existing VPCs found - will create new ones"
+        fi
       working-directory: ${{ env.TERRAFORM_DIR }}
 
     - name: Terraform Validate
