@@ -288,3 +288,4 @@ For issues and questions:
 - Review API documentation
 - Check application logs# CI/CD Test - Fri Oct  3 06:30:34 IDT 2025
 # Ready for fresh deployment - Fri Oct  3 07:44:36 IDT 2025
+# Trigger CI/CD deployment after manual VPC cleanup
